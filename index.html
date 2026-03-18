@@ -647,6 +647,105 @@ body.role-superadmin .role-lock { display: none !important; }
 }
 
 
+
+/* ══════════════════════════════════════
+   XP / SEVİYE SİSTEMİ
+══════════════════════════════════════ */
+
+/* Header XP widget */
+#xp-widget {
+  display: none; /* loginUser açar */
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid var(--b);
+  border-radius: 4px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+#xp-level-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--a2);
+}
+#xp-bar-wrap {
+  width: 60px;
+  height: 5px;
+  background: rgba(0,0,0,.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+#xp-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--a), var(--a2));
+  transition: width .6s ease;
+  width: 0%;
+}
+#xp-count {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  color: var(--td);
+}
+
+/* Mobil XP paneli — mobil menü içinde */
+#mob-xp-panel {
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--b);
+  border-radius: 5px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+#mob-xp-level {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: var(--a2);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#mob-xp-bar-wrap {
+  height: 6px;
+  background: rgba(0,0,0,.5);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+#mob-xp-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--a), var(--a2));
+  transition: width .6s ease;
+  width: 0%;
+}
+#mob-xp-next {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--td);
+}
+
+/* XP kazanıldı bildirim toast */
+#xp-toast {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,255,157,.15);
+  border: 1px solid var(--a2);
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  color: var(--a2);
+  letter-spacing: 1px;
+  z-index: 6000;
+  display: none;
+  white-space: nowrap;
+  box-shadow: 0 0 16px rgba(0,255,157,.3);
+}
 </style>
 </head>
 <body>
@@ -675,6 +774,14 @@ body.role-superadmin .role-lock { display: none !important; }
     <button class="mbt"    onclick="setLyr('str',this)">HARİTA</button>
   </div>
   <span id="role-badge-hdr" style="display:none"></span>
+
+  <!-- XP Widget (masaüstü) -->
+  <div id="xp-widget">
+    <span id="xp-level-name">ÇI RAK</span>
+    <div id="xp-bar-wrap"><div id="xp-bar-fill"></div></div>
+    <span id="xp-count">0 XP</span>
+  </div>
+
   <div id="captbtn" onclick="openAuth()">
     <span>🎣</span><span id="captname">GİRİŞ YAP</span>
   </div>
@@ -688,6 +795,16 @@ body.role-superadmin .role-lock { display: none !important; }
     <button id="mobmenu-close" onclick="closeMobMenu()">✕</button>
   </div>
   <div id="mobmenu-body">
+    <!-- XP Paneli (mobil) -->
+    <div id="mob-xp-panel" style="display:none">
+      <div id="mob-xp-level">
+        <span id="mob-xp-level-name">🎣 Çırak</span>
+        <span id="mob-xp-count" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--a)">0 XP</span>
+      </div>
+      <div id="mob-xp-bar-wrap"><div id="mob-xp-bar-fill"></div></div>
+      <div id="mob-xp-next">Sonraki seviye: 500 XP</div>
+    </div>
+
     <div class="mob-navitem on"  id="mn-map" onclick="mobGo('map-pg','mn-map','bn-map')"><span class="mob-navitem-icon">🗺</span>HARİTA</div>
     <div class="mob-navitem"     id="mn-wx"  onclick="mobGoWx()"><span class="mob-navitem-icon">🌤</span>HAVA DURUMU</div>
     <div class="mob-navitem"     id="mn-ch"  onclick="mobGoReq('chat-pg','mn-ch','bn-ch')"><span class="mob-navitem-icon">💬</span>SOHBET</div>
@@ -842,6 +959,7 @@ body.role-superadmin .role-lock { display: none !important; }
     <input id="chinp" type="text" placeholder="Mesajınızı yazın... (Enter)" maxlength="300" onkeydown="if(event.key==='Enter')sendChat()">
     <button id="chsnd" onclick="sendChat()">GÖNDER</button>
   </div>
+  <div id="chat-xp-info" style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--td);padding:3px 12px 5px;flex-shrink:0;"></div>
 </div>
 
 <!-- ─── AUTH PAGE ─── -->
@@ -2882,7 +3000,7 @@ function goPg(id,btn){
   document.getElementById(id).classList.add('on');
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
   if(btn)btn.classList.add('on');
-  if(id==='chat-pg')renderChat();
+  if(id==='chat-pg'){ renderChat(); if(typeof _updateChatXpInfo==='function') _updateChatXpInfo(); }
   if(id==='map-pg')for(const ms of[50,200,500])setTimeout(()=>mapO&&mapO.invalidateSize(true),ms);
 }
 
@@ -2933,6 +3051,158 @@ function init(){
     document.getElementById('onlc').textContent=`● ${Math.floor(Math.random()*5)+1} Çevrimiçi`;
     updateMobWeather();
   },5000);
+}
+
+
+// ══════════════════════════════════════════════════════
+// XP / SEVİYE SİSTEMİ
+// ══════════════════════════════════════════════════════
+
+// Seviye tanımları
+const XP_LEVELS = [
+  { name:'Çırak',    min:0,    max:500,  emoji:'🎣',  color:'#4a7a9b' },
+  { name:'Kalfa',    min:500,  max:2000, emoji:'⚓',  color:'#00c8ff' },
+  { name:'Balıkçı',  min:2000, max:5000, emoji:'🐟',  color:'#00ff9d' },
+  { name:'Usta',     min:5000, max:99999,emoji:'🧭',  color:'#ffaa00' },
+];
+
+// Süper admin — XP ne olursa olsun Usta
+const XP_SUPER_EMAIL = 'ayazerresmii@gmail.com';
+
+/** Kullanıcının XP'sine göre seviye objesini döndür */
+function xpLevel(xp){
+  if(!xp || xp < 0) xp = 0;
+  for(let i = XP_LEVELS.length - 1; i >= 0; i--){
+    if(xp >= XP_LEVELS[i].min) return XP_LEVELS[i];
+  }
+  return XP_LEVELS[0];
+}
+
+/** XP çubuğu doluluk yüzdesi (0-100) */
+function xpPct(xp){
+  const lv = xpLevel(xp);
+  if(lv.max === 99999) return 100;
+  const range = lv.max - lv.min;
+  const prog  = xp - lv.min;
+  return Math.min(100, Math.round((prog / range) * 100));
+}
+
+/** UI'yi güncelle (header + mobil menü) */
+function renderXP(){
+  if(!CU) return;
+
+  // Süper admin daima Usta görünsün
+  const isSA = (CU.email||'').toLowerCase() === XP_SUPER_EMAIL;
+  const rawXp = CU.xp || 0;
+  const lv    = isSA ? XP_LEVELS[XP_LEVELS.length-1] : xpLevel(rawXp);
+  const pct   = isSA ? 100 : xpPct(rawXp);
+  const xpTxt = isSA ? '∞ XP' : rawXp + ' XP';
+  const nextLv = isSA ? null : XP_LEVELS.find(l => l.min > rawXp);
+
+  // — Header widget —
+  const wid = document.getElementById('xp-widget');
+  if(wid){
+    wid.style.display = 'flex';
+    wid.style.borderColor = lv.color + '60';
+    const nameEl = document.getElementById('xp-level-name');
+    if(nameEl){ nameEl.textContent = lv.emoji + ' ' + lv.name.toUpperCase(); nameEl.style.color = lv.color; }
+    const fillEl = document.getElementById('xp-bar-fill');
+    if(fillEl){ fillEl.style.width = pct + '%'; fillEl.style.background = 'linear-gradient(90deg,'+lv.color+'80,'+lv.color+')'; }
+    const cntEl = document.getElementById('xp-count');
+    if(cntEl){ cntEl.textContent = xpTxt; }
+  }
+
+  // — Mobil menü —
+  const mpanel = document.getElementById('mob-xp-panel');
+  if(mpanel){
+    mpanel.style.display = 'block';
+    const mlvEl  = document.getElementById('mob-xp-level-name');
+    const mcntEl = document.getElementById('mob-xp-count');
+    const mfill  = document.getElementById('mob-xp-bar-fill');
+    const mnext  = document.getElementById('mob-xp-next');
+    if(mlvEl){ mlvEl.textContent = lv.emoji + ' ' + lv.name; mlvEl.style.color = lv.color; }
+    if(mcntEl){ mcntEl.textContent = xpTxt; }
+    if(mfill){ mfill.style.width = pct + '%'; mfill.style.background = 'linear-gradient(90deg,'+lv.color+'80,'+lv.color+')'; }
+    if(mnext){ mnext.textContent = nextLv ? 'Sonraki: ' + nextLv.name + ' (' + nextLv.min + ' XP)' : '🏆 Maksimum seviye!'; }
+  }
+
+  // — Rol sınıfı güncellemesi (usta-only için) —
+  // Balıkçı+ ise usta kilitlerini kaldır
+  if(isSA || rawXp >= 2000){
+    document.body.classList.add('role-superadmin'); // CSS kilitleri kaldırır
+  }
+}
+
+/** Toast bildirimi göster */
+function showXpToast(amount, reason){
+  const el = document.getElementById('xp-toast');
+  if(!el) return;
+  el.textContent = '+' + amount + ' XP — ' + reason;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 2500);
+}
+
+/**
+ * XP ekle ve Firebase'e kaydet.
+ * @param {number} amount - eklenecek XP miktarı
+ * @param {string} reason - toast mesajı
+ */
+function addXP(amount, reason){
+  if(!CU) return;
+  // Süper admin XP almaz (gerek yok) ama gösterim etkilenmesin
+  const isSA = (CU.email||'').toLowerCase() === XP_SUPER_EMAIL;
+  if(isSA){ showXpToast(amount, reason); return; }
+
+  const oldXp  = CU.xp || 0;
+  const newXp  = oldXp + amount;
+  const oldLv  = xpLevel(oldXp);
+  const newLv  = xpLevel(newXp);
+
+  CU.xp = newXp;
+
+  // Firebase'e yaz (users/<uid>/xp)
+  if(fbReady && db && CU.uid){
+    db.ref('users/' + CU.uid + '/xp').set(newXp).catch(()=>{});
+  }
+  // localStorage'a da kaydet
+  ls(K3, CU.uid || CU.un);
+
+  // Seviye atlandıysa özel tebrik
+  if(newLv.name !== oldLv.name){
+    showXpToast(amount, '🎉 SEVİYE ATLANDI: ' + newLv.emoji + ' ' + newLv.name);
+    // Sohbete duyuru
+    addCSys('🏆 ' + CU.nm + ' yeni seviyeye ulaştı: ' + newLv.emoji + ' ' + newLv.name + '!');
+  } else {
+    showXpToast(amount, reason);
+  }
+
+  renderXP();
+}
+
+/**
+ * Günlük giriş bonusu — her seferinde +50 XP (günde 1 kez)
+ * lastLogin Firebase'de saklanır
+ */
+function checkDailyLogin(){
+  if(!CU) return;
+  const isSA = (CU.email||'').toLowerCase() === XP_SUPER_EMAIL;
+  if(isSA){ renderXP(); return; }
+
+  const today    = new Date().toISOString().slice(0,10); // 'YYYY-MM-DD'
+  const lastLogin = CU.lastLogin || '';
+
+  if(lastLogin === today){
+    renderXP(); // Bugün zaten aldı
+    return;
+  }
+
+  // Yeni gün — bonus ver
+  CU.lastLogin = today;
+  if(fbReady && db && CU.uid){
+    db.ref('users/' + CU.uid + '/lastLogin').set(today).catch(()=>{});
+  }
+  addXP(50, 'Günlük Giriş Bonusu 🌅');
 }
 
 document.addEventListener('DOMContentLoaded',init);
@@ -3209,9 +3479,16 @@ window.saveNote=function(){
   mapO.getContainer().style.cursor='';
   mapO.setView([n.lat,n.lng],Math.max(mapO.getZoom(),13));
   fbPush('notes/'+n.id,n);
+  addXP(100, 'Mera Notu 📍');
 };
 
-const _origSendChat=window.sendChat;
+// Sohbet XP durum değişkenleri
+let _chatXpLastTime  = 0;          // son XP verilen zaman (ms)
+let _chatXpTodayKey  = '';         // bugünün tarihi (YYYY-MM-DD)
+let _chatXpTodayCount = 0;         // bugün XP kazanılan mesaj sayısı
+const CHAT_XP_COOLDOWN = 3000;     // 3 saniye (ms)
+const CHAT_XP_DAILY_LIMIT = 10;    // günde max 10 mesaj XP'si
+
 window.sendChat=function(){
   if(!CU){openAuth();return;}
   const inp=document.getElementById('chinp'),txt=inp.value.trim();
@@ -3220,7 +3497,56 @@ window.sendChat=function(){
   chat.push(msg);if(chat.length>200)chat=chat.slice(-200);
   ls(K4,chat);inp.value='';renderChat();
   fbPush('chat/'+msg.id,msg);
+
+  // XP — süper admin muaf
+  const isSA = (CU.email||'').toLowerCase() === XP_SUPER_EMAIL;
+  if(!isSA){
+    const now   = Date.now();
+    const today = new Date().toISOString().slice(0,10);
+
+    // Günlük sayacı sıfırla (yeni gün)
+    if(_chatXpTodayKey !== today){
+      _chatXpTodayKey   = today;
+      _chatXpTodayCount = 0;
+    }
+
+    const cooldownOk = (now - _chatXpLastTime) >= CHAT_XP_COOLDOWN;
+    const limitOk    = _chatXpTodayCount < CHAT_XP_DAILY_LIMIT;
+
+    if(cooldownOk && limitOk){
+      _chatXpLastTime = now;
+      _chatXpTodayCount++;
+      addXP(5, 'Mesaj 💬');
+      _updateChatXpInfo();
+    } else if(!cooldownOk){
+      _updateChatXpInfo('cooldown');
+    }
+    // limit dolmuşsa sessizce geç (mesaj yine gider, XP yok)
+  }
 };
+
+/** Sohbet kutusunun altındaki XP bilgi satırını güncelle */
+function _updateChatXpInfo(state){
+  const el = document.getElementById('chat-xp-info');
+  if(!el) return;
+  if(!CU){ el.textContent=''; return; }
+  const isSA = (CU.email||'').toLowerCase() === XP_SUPER_EMAIL;
+  if(isSA){ el.textContent=''; return; }
+
+  const rem = CHAT_XP_DAILY_LIMIT - _chatXpTodayCount;
+
+  if(state === 'cooldown'){
+    el.textContent = '⏳ 3 sn bekleniyor...';
+    el.style.color = 'var(--w)';
+    setTimeout(() => _updateChatXpInfo(), 3100);
+  } else if(rem <= 0){
+    el.textContent = '📊 Günlük sohbet XP limitine ulaştın (yarın devam)';
+    el.style.color = 'var(--td)';
+  } else {
+    el.textContent = '+5 XP/mesaj · bugün ' + rem + ' mesaj kaldı';
+    el.style.color = 'var(--td)';
+  }
+}
 
 // doReg artık dogrudan Firebase Auth kullaniyor — override kaldirildi
 
@@ -3267,6 +3593,8 @@ window.loginUser=function(u){
     : `${u.nm} kamışını aldı, meraya geliyor... 🎣 Kıyıdan devler seni bekliyor!`;
   addCSys(_greet);
   updateMobMenu();
+  // XP sistemi — günlük giriş kontrolü ve render
+  setTimeout(checkDailyLogin, 800);
   goPg('map-pg',document.querySelector('.ntab'));
 };
 </script>
@@ -3296,5 +3624,6 @@ document.addEventListener('DOMContentLoaded', fbInit);
   </div>
 </div>
 
+<div id="xp-toast">+0 XP</div>
 </body>
 </html>
