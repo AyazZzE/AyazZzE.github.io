@@ -488,7 +488,8 @@ body.logged-out #admBtn { display: none; }
 body.role-amator .usta-only { opacity: 0.35; pointer-events: none; position: relative; }
 body.role-usta   .usta-only,
 body.role-reis   .usta-only,
-body.role-admin  .usta-only { opacity: 1; pointer-events: auto; }
+body.role-admin  .usta-only,
+body.role-superadmin .usta-only { opacity: 1; pointer-events: auto; }
 
 /* Kilit overlay */
 .role-lock {
@@ -504,7 +505,8 @@ body.role-admin  .usta-only { opacity: 1; pointer-events: auto; }
 }
 body.role-usta .role-lock,
 body.role-reis .role-lock,
-body.role-admin .role-lock { display: none; }
+body.role-admin .role-lock,
+body.role-superadmin .role-lock { display: none; }
 
 /* Amator görünümü — detaylı balık kartı kısıtı */
 body.role-amator .fd { display: none !important; }  /* Balık detay açılmıyor */
@@ -517,6 +519,11 @@ body.role-admin  .fd { /* normal — JS toggle ile açılabilir */ }
 
 /* Windy gelişmiş katmanlar: default gizli, JS açar */
 #windy-adv-layers { display: none; }
+body.role-superadmin #windy-adv-layers { display: flex !important; }
+body.role-superadmin #windy-lock { display: none !important; }
+body.role-superadmin #sprecs-lock { display: none !important; }
+body.role-superadmin .usta-only { opacity: 1 !important; pointer-events: auto !important; }
+body.role-superadmin .role-lock { display: none !important; }
 
 /* Kayıt formunda av tipi seçici */
 .fishtype-row { display: flex; gap: 5px; margin-bottom: 6px; }
@@ -695,6 +702,14 @@ body.role-admin  .fd { /* normal — JS toggle ile açılabilir */ }
       <div class="mob-wi">🌡 <span id="mob-temp">—</span></div>
       <div class="mob-wi">📊 <span id="mob-pres">—</span></div>
       <div class="mob-wi">🌊 <span id="mob-wave">—</span></div>
+    </div>
+    <!-- Yasal linkler — mobil menü altı -->
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--b);">
+      <button onclick="showLegal('about');closeMobMenu()" style="background:none;border:none;color:var(--td);font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;">💡 Hakkımızda</button>
+      <span style="color:var(--b)">·</span>
+      <button onclick="showLegal('privacy');closeMobMenu()" style="background:none;border:none;color:var(--td);font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;">🔒 Gizlilik</button>
+      <span style="color:var(--b)">·</span>
+      <button onclick="showLegal('contact');closeMobMenu()" style="background:none;border:none;color:var(--td);font-family:'Share Tech Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;">📧 İletişim</button>
     </div>
   </div>
 </div>
@@ -1071,49 +1086,72 @@ function roleBadge(role){
  */
 function applyRoleUI(){
   const body = document.body;
-  // Önce hepsini kaldır
-  body.classList.remove('role-amator','role-usta','role-reis','role-admin','logged-in','logged-out');
 
-  if(CU){
-    body.classList.add('logged-in');
-    body.classList.add('role-' + (CU.role || 'amator'));
-    // Admin butonu
-    const admBtn = document.getElementById('admBtn');
-    if(admBtn) admBtn.style.display = CU.role === 'admin' ? 'inline-block' : 'none';
-    // Kaptan adı + rozet
-    const captEl = document.getElementById('captname');
-    if(captEl){
-      const r = ROLES[CU.role] || ROLES.amator;
-      captEl.textContent = `${r.emoji} ${CU.nm}`;
-      captEl.style.color = r.color;
-    }
-    // Mob menü admin butonu
-    const mnAdm = document.getElementById('mn-adm');
-    if(mnAdm) mnAdm.style.display = CU.role === 'admin' ? '' : 'none';
-  } else {
+  // Tüm rol class'larını temizle
+  body.classList.remove(
+    'role-amator','role-usta','role-reis','role-admin',
+    'role-superadmin','logged-in','logged-out'
+  );
+
+  if(!CU){ 
     body.classList.add('logged-out');
     const admBtn = document.getElementById('admBtn');
     if(admBtn) admBtn.style.display = 'none';
     const captEl = document.getElementById('captname');
     if(captEl){ captEl.textContent = 'GİRİŞ YAP'; captEl.style.color = ''; }
+    const chInp = document.getElementById('chia');
+    if(chInp) chInp.style.display = 'none';
+    return;
   }
 
-  // Windy gelişmiş katmanlar: sadece usta+
+  // Giriş yapılmış
+  body.classList.add('logged-in');
+  body.classList.add('role-' + (CU.role || 'amator'));
+
+  // Süper admin ekstra class (e-posta bazlı — rol ne olursa olsun)
+  const SADMINS = ['ayazerresmii@gmail.com'];
+  if(SADMINS.includes((CU.email||'').toLowerCase())){
+    body.classList.add('role-superadmin');
+  }
+
+  // Admin butonu
+  const admBtn = document.getElementById('admBtn');
+  if(admBtn) admBtn.style.display = CU.role === 'admin' ? 'inline-block' : 'none';
+
+  // Kaptan adı + renk
+  const captEl = document.getElementById('captname');
+  if(captEl){
+    const r = ROLES[CU.role] || ROLES.amator;
+    captEl.textContent = r.emoji + ' ' + CU.nm;
+    captEl.style.color = r.color;
+  }
+
+  // Mob menü admin
+  const mnAdm = document.getElementById('mn-adm');
+  if(mnAdm) mnAdm.style.display = CU.role === 'admin' ? '' : 'none';
+
+  // Windy gelişmiş katmanlar — inline style KALDIR, CSS class yönetsin
+  // (CSS: body.role-admin .usta-only { opacity:1; pointer-events:auto } zaten var)
   const windyAdv = document.getElementById('windy-adv-layers');
-  if(windyAdv) windyAdv.style.display = hasRole('usta') ? 'flex' : 'none';
+  if(windyAdv){
+    windyAdv.style.display = hasRole('usta') ? 'flex' : 'none';
+    const wLock = document.getElementById('windy-lock');
+    if(wLock) wLock.style.display = hasRole('usta') ? 'none' : 'block';
+  }
 
-  // Nokta tavsiyesi detayı: usta+
+  // Nokta tavsiyesi — inline style kaldır, CSS class yönetsin
   const sprecEl = document.getElementById('sprecs');
-  if(sprecEl) sprecEl.style.opacity = hasRole('usta') ? '1' : '0.4';
-
+  if(sprecEl){
+    sprecEl.style.opacity   = '';   // inline'ı sil, CSS class kazansın
+    sprecEl.style.pointerEvents = '';
+  }
   const spLock = document.getElementById('sprecs-lock');
   if(spLock) spLock.style.display = hasRole('usta') ? 'none' : 'block';
 
-  // Chat girişi: sadece giriş yapmış kullanıcılar
+  // Chat girişi
   const chInp = document.getElementById('chia');
-  if(chInp) chInp.style.display = CU ? 'flex' : 'none';
+  if(chInp) chInp.style.display = 'flex';
 
-  // recalc — tahminler rol bazlı güncellenir
   if(typeof recalc === 'function') recalc();
 }
 
