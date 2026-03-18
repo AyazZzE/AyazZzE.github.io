@@ -2097,10 +2097,17 @@ function admDelChat(msgId){
 
 function goAdmin(btn){
   if(!CU||CU.role!=='admin'){
-    alert('⚠ Bu sayfaya erişim yetkiniz yok!'); // Şifre ipucunu sildik
+    alert('⚠ Bu sayfaya erişim yetkiniz yok!');
     return;
   }
-  goPg('admin-pg',btn);
+  // Zaten giriş yapılmış admin → auth kutusunu gizle, içeriği göster
+  const admBox     = document.getElementById('adm-auth-box');
+  const admContent = document.getElementById('adm-main-content');
+  const admEmail   = document.getElementById('adm-auth-email');
+  if(admBox)     admBox.style.display     = 'none';
+  if(admContent) admContent.style.display = 'block';
+  if(admEmail)   admEmail.textContent     = CU.email || CU.un || 'Admin';
+  goPg('admin-pg', btn);
   renderAdmin();
 }
 
@@ -2748,6 +2755,13 @@ function init(){
     document.getElementById('captname').textContent=CU.nm;
     if(CU.role==='admin'){
       document.getElementById('admBtn').style.display='inline-block';
+      // Sayfa yüklendiğinde admin paneli önceden hazırla (auth kutusu gizli)
+      const admBox     = document.getElementById('adm-auth-box');
+      const admContent = document.getElementById('adm-main-content');
+      const admEmail   = document.getElementById('adm-auth-email');
+      if(admBox)     admBox.style.display     = 'none';
+      if(admContent) admContent.style.display = 'block';
+      if(admEmail)   admEmail.textContent     = CU.email || CU.un || 'Admin';
     }
   }
 
@@ -2945,7 +2959,24 @@ window.loginUser=function(u){
   applyRoleUI();
   const roleEl=document.getElementById('role-badge-hdr');
   if(roleEl){const r=ROLES[u.role]||ROLES.amator;roleEl.textContent=r.emoji+' '+r.label;roleEl.style.color=r.color;roleEl.style.borderColor=r.color+'60';roleEl.style.display='inline-block';}
-  addCSys(`${u.nm} Kamışını aldı geldi ⚓`);
+  // Admin paneli — giriş yöntemi ne olursa olsun auth kutusunu gizle
+  const _aBox=document.getElementById('adm-auth-box');
+  const _aCnt=document.getElementById('adm-main-content');
+  const _aEml=document.getElementById('adm-auth-email');
+  if(u.role==='admin'){
+    if(_aBox) _aBox.style.display='none';
+    if(_aCnt) _aCnt.style.display='block';
+    if(_aEml) _aEml.textContent=u.email||u.un||'Admin';
+  } else {
+    if(_aBox) _aBox.style.display='block';
+    if(_aCnt) _aCnt.style.display='none';
+  }
+  // Kullanıcı tipine göre karşılama mesajı
+  const _mode = u.userMode || u.fishType || 'shore';
+  const _greet = _mode === 'boat'
+    ? `${u.nm} teknesine bindi, motor açılıyor... 🛥️ Vira Bismillah!`
+    : `${u.nm} kamışını aldı, meraya geliyor... 🎣 Kıyıdan devler seni bekliyor!`;
+  addCSys(_greet);
   updateMobMenu();
   goPg('map-pg',document.querySelector('.ntab'));
 };
