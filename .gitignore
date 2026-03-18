@@ -1,0 +1,9 @@
+# VS Code özel dosyaları
+.vscode/
+
+# İşletim sistemi çöpleri
+.DS_Store
+Thumbs.db
+
+# Eğer ileride npm kullanırsan
+node_modules/
