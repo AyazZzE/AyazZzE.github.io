@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta name="description" content="Gelibolu balık meraları, hava durumu ve yapay zeka destekli balık avı analiz sistemi. En güncel mera takibi.">
+<meta name="keywords" content="balık radarı, gelibolu balık avı, mera takibi, balıkçı radarı, çanakkale balık avı, lüfer meraları">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚓ Balıkçı Radarı</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020b14;--panel:#041020;--card:#071828;--modal:#050f1e;--b:#0d3a5c;--bb:#1a6a9a;--a:#00c8ff;--a2:#00ff9d;--a3:#ff6b35;--w:#ffaa00;--r:#ff3b3b;--t:#b8d4e8;--tb:#e8f4ff;--td:#4a7a9b;--gl:0 0 20px rgba(0,200,255,.3);--gl2:0 0 20px rgba(0,255,157,.3);}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--t);font-family:'Rajdhani',sans-serif;width:100%;height:100%;overflow:hidden;display:flex;flex-direction:column;margin:0;padding:0;}
+
+/* HEADER */
+#hdr{background:linear-gradient(90deg,#020b14,#041828,#020b14);border-bottom:1px solid var(--b);padding:5px 10px;display:flex;align-items:center;gap:7px;z-index:1000;flex-shrink:0;flex-wrap:nowrap;}
+.logo{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;color:var(--a);letter-spacing:2px;white-space:nowrap;text-shadow:var(--gl);}
+.logo b{color:var(--a2);}
+#navtabs{display:flex;gap:3px;}
+.ntab{background:rgba(0,0,0,.5);border:1px solid var(--b);color:var(--td);padding:4px 8px;border-radius:3px;cursor:pointer;font-size:8px;font-family:'Orbitron',monospace;letter-spacing:1px;transition:all .2s;white-space:nowrap;}
+.ntab.on{background:rgba(0,200,255,.15);border-color:var(--a);color:var(--a);}
+.ntab.adm{border-color:rgba(255,170,0,.5);color:var(--w);}
+.ntab.adm.on{background:rgba(255,170,0,.15);}
+#wbar{display:flex;align-items:center;gap:5px;margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;}
+.wi{display:flex;align-items:center;gap:2px;padding:2px 5px;border:1px solid var(--b);border-radius:3px;background:rgba(0,0,0,.3);white-space:nowrap;}
+.wi span{color:var(--a);}
+.wi.ld{opacity:.35;}
+.mtog{display:flex;gap:2px;}
+.mbt{background:rgba(0,0,0,.5);border:1px solid var(--b);color:var(--td);padding:3px 7px;border-radius:3px;cursor:pointer;font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:1px;transition:all .2s;}
+.mbt.on{background:rgba(0,200,255,.15);border-color:var(--a);color:var(--a);}
+#captbtn{display:flex;align-items:center;gap:5px;background:rgba(0,200,255,.05);border:1px solid var(--b);border-radius:4px;padding:3px 8px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+#captbtn:hover{border-color:var(--a);}
+#captname{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--a2);}
+
+/* LAYOUT */
+#main{display:flex;flex:1;min-height:0;overflow:hidden;}
+.pg{display:none;flex:1;min-height:0;}
+.pg.on{display:flex;flex:1;min-height:0;overflow:hidden;}
+
+/* LEFT PANEL */
+#lp{width:268px;background:var(--panel);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;min-height:0;}
+#lp::-webkit-scrollbar{width:3px;}
+#lp::-webkit-scrollbar-thumb{background:var(--b);}
+
+/* RIGHT PANEL */
+#rp{width:248px;background:var(--panel);border-left:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;min-height:0;}
+#rp::-webkit-scrollbar{width:3px;}
+#rp::-webkit-scrollbar-thumb{background:var(--b);}
+
+.sec{border-bottom:1px solid var(--b);padding:9px 11px;flex-shrink:0;}
+.stl{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--td);margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.stl::before{content:'';display:block;width:3px;height:9px;background:var(--a);}
+
+/* INPUT */
+.ir{display:flex;flex-direction:column;gap:4px;margin-bottom:6px;}
+.il{font-size:9px;color:var(--td);letter-spacing:1px;text-transform:uppercase;}
+.ri,.rs{background:rgba(0,0,0,.5);border:1px solid var(--b);color:var(--tb);padding:5px 8px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:11px;width:100%;transition:border-color .2s;}
+.ri:focus,.rs:focus{outline:none;border-color:var(--a);}
+.rs option{background:#020b14;}
+textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:12px;}
+
+/* BUTTONS */
+.btn{background:linear-gradient(135deg,rgba(0,200,255,.1),rgba(0,200,255,.05));border:1px solid var(--a);color:var(--a);padding:6px 10px;border-radius:3px;cursor:pointer;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;transition:all .2s;width:100%;display:block;}
+.btn:hover{background:rgba(0,200,255,.2);box-shadow:var(--gl);}
+.btn.g{border-color:var(--a2);color:var(--a2);background:linear-gradient(135deg,rgba(0,255,157,.1),rgba(0,255,157,.05));}
+.btn.g:hover{background:rgba(0,255,157,.2);}
+.btn.r{border-color:var(--r);color:var(--r);background:rgba(255,59,59,.05);}
+.btn.o{border-color:var(--w);color:var(--w);background:rgba(255,170,0,.05);}
+.btn.sm{padding:4px 8px;font-size:7px;width:auto;display:inline-block;}
+.btn.loc{border-color:var(--a2);color:var(--a2);font-size:8px;letter-spacing:1px;background:rgba(0,255,157,.08);}
+
+/* FISH CARDS */
+.fc{background:var(--card);border:1px solid var(--b);border-radius:4px;padding:8px;margin-bottom:5px;cursor:pointer;transition:all .2s;}
+.fc:hover{border-color:var(--a);transform:translateX(2px);}
+.fc.ex{border-color:var(--a2);}
+.fh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.fn{font-weight:700;font-size:13px;color:var(--tb);}
+.fs{font-size:9px;color:var(--td);font-family:'Share Tech Mono',monospace;}
+.pbw{background:rgba(0,0,0,.4);border-radius:2px;height:7px;overflow:hidden;margin-bottom:3px;}
+.pb{height:100%;border-radius:2px;transition:width 1s;position:relative;}
+.pb::after{content:'';position:absolute;right:0;top:0;bottom:0;width:3px;background:rgba(255,255,255,.4);}
+.ph{background:linear-gradient(90deg,#00501e,var(--a2));}
+.pm{background:linear-gradient(90deg,#504000,var(--w));}
+.pl{background:linear-gradient(90deg,#500a00,var(--a3));}
+.fd{display:none;margin-top:7px;padding-top:6px;border-top:1px solid var(--b);}
+.fc.ex .fd{display:block;}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:5px;}
+.di{background:rgba(0,0,0,.3);border-radius:3px;padding:3px 6px;}
+.dl{font-size:8px;color:var(--td);text-transform:uppercase;letter-spacing:1px;}
+.dv{font-size:10px;color:var(--a);font-family:'Share Tech Mono',monospace;}
+.tl{list-style:none;}
+.tl li{font-size:10px;color:var(--t);padding:2px 0;display:flex;gap:4px;}
+.tl li::before{content:'▸';color:var(--a2);}
+
+/* SPOT CARDS */
+.sc{background:rgba(0,200,255,.04);border:1px solid rgba(0,200,255,.15);border-left:3px solid var(--a);border-radius:4px;padding:6px 8px;margin-bottom:5px;cursor:pointer;transition:all .2s;}
+.sc:hover{background:rgba(0,200,255,.08);transform:translateX(2px);}
+.sn{font-weight:700;font-size:12px;color:var(--a);}
+.sd{font-size:10px;color:var(--t);line-height:1.4;}
+
+/* NEARBY */
+.nc{background:var(--card);border:1px solid var(--b);border-radius:4px;padding:7px 9px;margin-bottom:5px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.nc:hover{border-color:var(--a2);}
+.nc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.nc.ht::before{background:var(--a2);}
+.nc.md::before{background:var(--w);}
+.nc.cl::before{background:var(--a3);}
+.nn{font-size:12px;font-weight:700;color:var(--tb);}
+.ndst{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--td);margin:2px 0;}
+.ndsc{font-size:10px;color:var(--t);line-height:1.3;}
+.nfb{font-size:8px;padding:1px 4px;border-radius:2px;background:rgba(0,200,255,.1);color:var(--a);border:1px solid rgba(0,200,255,.2);display:inline-block;margin:2px 2px 0 0;}
+
+/* LOG */
+.le{background:var(--card);border:1px solid var(--b);border-radius:4px;padding:6px 8px;margin-bottom:5px;font-size:11px;cursor:pointer;transition:all .2s;}
+.le:hover{border-color:var(--a);}
+.lm{display:flex;justify-content:space-between;margin-bottom:2px;}
+.lc{color:var(--a2);font-weight:700;font-size:10px;}
+.lt{color:var(--td);font-family:'Share Tech Mono',monospace;font-size:9px;}
+.lb{display:inline-block;padding:1px 4px;border-radius:2px;font-size:8px;font-weight:700;margin-right:2px;}
+.lg{background:rgba(0,255,157,.15);color:var(--a2);border:1px solid rgba(0,255,157,.3);}
+.lbr{background:rgba(255,107,53,.15);color:var(--a3);border:1px solid rgba(255,107,53,.3);}
+.li{background:rgba(0,200,255,.15);color:var(--a);border:1px solid rgba(0,200,255,.3);}
+
+/* MODAL */
+#mov{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:3000;display:none;align-items:center;justify-content:center;}
+#mov.on{display:flex;}
+.modal{background:var(--modal);border:1px solid var(--bb);border-radius:6px;padding:20px;width:400px;max-width:96vw;box-shadow:0 0 40px rgba(0,200,255,.2);max-height:92vh;overflow-y:auto;}
+.modal h2{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--a);margin-bottom:12px;}
+.mact{display:flex;gap:6px;margin-top:10px;}
+.cncl{background:transparent;border:1px solid var(--b);color:var(--td);padding:6px 10px;border-radius:3px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:11px;transition:all .2s;flex:1;}
+.cncl:hover{border-color:var(--td);color:var(--t);}
+
+/* MAP */
+#mc{flex:1;position:relative;min-width:0;min-height:0;}
+#map{position:absolute;top:0;left:0;right:0;bottom:0;}
+#mctrl{position:absolute;top:10px;right:10px;z-index:500;display:flex;flex-direction:column;gap:4px;}
+.mpb{background:rgba(2,11,20,.92);border:1px solid var(--bb);color:var(--t);padding:6px 10px;border-radius:4px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;letter-spacing:1px;transition:all .2s;white-space:nowrap;}
+.mpb:hover{border-color:var(--a);color:var(--a);}
+.mpb.loc{border-color:var(--a2);color:var(--a2);}
+#nmbanner{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(0,200,255,.15);border:1px solid var(--a);color:var(--a);padding:8px 16px;border-radius:4px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;display:none;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 10px rgba(0,200,255,.3);}50%{box-shadow:0 0 25px rgba(0,200,255,.6);}}
+
+/* SONAR */
+#sonar{position:absolute;bottom:55px;left:10px;z-index:500;width:50px;height:50px;}
+.sr{position:absolute;border-radius:50%;border:1px solid var(--a);top:50%;left:50%;transform:translate(-50%,-50%);animation:se 3s infinite;opacity:0;}
+.sr:nth-child(2){animation-delay:1s;}.sr:nth-child(3){animation-delay:2s;}
+@keyframes se{0%{width:10px;height:10px;opacity:.8;}100%{width:50px;height:50px;opacity:0;}}
+.soc{position:absolute;width:7px;height:7px;background:var(--a);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px var(--a);}
+
+/* LOCATION PULSE MARKER */
+.lpm{width:22px;height:22px;position:relative;}
+.lpm::before{content:'';position:absolute;inset:0;border-radius:50%;background:var(--a2);opacity:.25;animation:lpring 1.8s ease-out infinite;}
+.lpm::after{content:'';position:absolute;top:50%;left:50%;width:11px;height:11px;border-radius:50%;background:var(--a2);border:2px solid #fff;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--a2);}
+@keyframes lpring{0%{transform:scale(1);opacity:.4;}100%{transform:scale(2.8);opacity:0;}}
+
+/* CHAT */
+#chat-pg{flex-direction:column;}
+#chdr{background:var(--panel);border-bottom:1px solid var(--b);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+#chdr h2{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;color:var(--a);}
+.onl{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--a2);background:rgba(0,255,157,.1);border:1px solid rgba(0,255,157,.3);padding:2px 6px;border-radius:3px;}
+#chmsg{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;min-height:0;}
+#chmsg::-webkit-scrollbar{width:3px;}
+#chmsg::-webkit-scrollbar-thumb{background:var(--b);}
+.cm{display:flex;gap:7px;align-items:flex-start;}
+.cm.me{flex-direction:row-reverse;}
+.cav{width:28px;height:28px;border-radius:50%;background:rgba(0,200,255,.15);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-family:'Orbitron',monospace;color:var(--a);}
+.cb{background:var(--card);border:1px solid var(--b);border-radius:4px;padding:6px 9px;max-width:75%;}
+.cm.me .cb{background:rgba(0,200,255,.08);border-color:var(--bb);}
+.csd{font-size:9px;color:var(--a2);font-weight:700;margin-bottom:2px;}
+.ct{font-size:12px;color:var(--tb);line-height:1.5;}
+.ctm{font-size:8px;color:var(--td);font-family:'Share Tech Mono',monospace;margin-top:2px;}
+.csys{text-align:center;font-size:9px;color:var(--td);font-family:'Share Tech Mono',monospace;padding:3px;}
+#chia{background:var(--panel);border-top:1px solid var(--b);padding:9px 12px;display:flex;gap:7px;flex-shrink:0;}
+#chinp{flex:1;background:rgba(0,0,0,.5);border:1px solid var(--b);color:var(--tb);padding:7px 10px;border-radius:4px;font-family:'Rajdhani',sans-serif;font-size:13px;}
+#chinp:focus{outline:none;border-color:var(--a);}
+#chsnd{background:rgba(0,200,255,.15);border:1px solid var(--a);color:var(--a);padding:7px 12px;border-radius:4px;cursor:pointer;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:1px;}
+#chsnd:hover{background:rgba(0,200,255,.25);}
+
+/* ADMIN */
+#admin-pg{flex-direction:column;overflow-y:auto;}
+.admc{padding:16px;max-width:860px;margin:0 auto;width:100%;}
+.admh{font-family:'Orbitron',monospace;font-size:13px;letter-spacing:3px;color:var(--w);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.adgr{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;}
+.stc{background:var(--card);border:1px solid var(--b);border-radius:5px;padding:12px;}
+.stn{font-family:'Orbitron',monospace;font-size:24px;color:var(--a);font-weight:900;}
+.stl2{font-size:10px;color:var(--td);margin-top:2px;letter-spacing:1px;text-transform:uppercase;}
+.adsec{background:var(--card);border:1px solid var(--b);border-radius:5px;padding:12px;margin-bottom:12px;}
+.adst{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--w);margin-bottom:10px;}
+.urow{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--b);border-radius:4px;margin-bottom:4px;background:rgba(0,0,0,.2);}
+.urn{flex:1;font-size:12px;color:var(--tb);}
+.urol{font-size:8px;font-family:'Share Tech Mono',monospace;padding:2px 5px;border-radius:2px;}
+.ra{background:rgba(255,170,0,.15);color:var(--w);border:1px solid rgba(255,170,0,.3);}
+.ru{background:rgba(0,200,255,.1);color:var(--a);border:1px solid rgba(0,200,255,.2);}
+.rbn{background:rgba(255,59,59,.1);color:var(--r);border:1px solid rgba(255,59,59,.2);}
+.nrow{display:flex;gap:6px;align-items:flex-start;padding:6px;border:1px solid var(--b);border-radius:4px;margin-bottom:4px;background:rgba(0,0,0,.2);font-size:11px;}
+.ntxt{flex:1;color:var(--t);}
+
+/* AUTH */
+#auth-pg{align-items:center;justify-content:center;}
+.abox{background:var(--card);border:1px solid var(--bb);border-radius:8px;padding:24px;width:345px;max-width:95vw;box-shadow:0 0 50px rgba(0,200,255,.15);}
+.alogo{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--a);text-align:center;margin-bottom:3px;text-shadow:var(--gl);}
+.alogo b{color:var(--a2);}
+.asub{font-size:9px;color:var(--td);text-align:center;margin-bottom:16px;font-family:'Share Tech Mono',monospace;}
+.atabs{display:flex;margin-bottom:12px;border:1px solid var(--b);border-radius:4px;overflow:hidden;}
+.atab{flex:1;padding:6px;text-align:center;cursor:pointer;font-size:9px;font-family:'Orbitron',monospace;letter-spacing:1px;transition:all .2s;color:var(--td);}
+.atab.on{background:rgba(0,200,255,.15);color:var(--a);}
+.aerr{color:var(--r);font-size:10px;text-align:center;margin-top:5px;display:none;}
+.aerr.on{display:block;}
+
+/* DATA SOURCES PAGE */
+#src-pg{flex-direction:column;overflow-y:auto;padding:20px;}
+.srch{font-family:'Orbitron',monospace;font-size:13px;letter-spacing:3px;color:var(--a2);margin-bottom:18px;}
+.srcsec{background:var(--card);border:1px solid var(--b);border-radius:6px;padding:14px;margin-bottom:14px;}
+.srcsec h3{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;color:var(--a);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.srcsec h3::before{content:'';display:block;width:3px;height:10px;background:var(--a);}
+.src-item{background:rgba(0,0,0,.3);border:1px solid var(--b);border-radius:4px;padding:10px;margin-bottom:8px;}
+.src-name{font-size:13px;font-weight:700;color:var(--tb);margin-bottom:3px;}
+.src-url{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--a);margin-bottom:5px;}
+.src-desc{font-size:11px;color:var(--t);line-height:1.6;}
+.src-badge{display:inline-block;padding:2px 6px;border-radius:2px;font-size:8px;font-family:'Share Tech Mono',monospace;letter-spacing:1px;margin-right:4px;margin-top:4px;}
+.sb-free{background:rgba(0,255,157,.1);color:var(--a2);border:1px solid rgba(0,255,157,.25);}
+.sb-open{background:rgba(0,200,255,.1);color:var(--a);border:1px solid rgba(0,200,255,.25);}
+.sb-est{background:rgba(255,170,0,.1);color:var(--w);border:1px solid rgba(255,170,0,.25);}
+.sb-live{background:rgba(255,107,53,.1);color:var(--a3);border:1px solid rgba(255,107,53,.25);}
+.warn-box{background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.3);border-radius:4px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--t);line-height:1.7;}
+.warn-box strong{color:var(--w);}
+
+
+/* MAP PAGE LAYOUT */
+#map-pg{flex-direction:row;}
+
+.apb{height:6px;border-radius:2px;}
+/* LEAFLET DARK */
+.leaflet-container{background:#010810;}
+.leaflet-control-zoom a{background:#041020!important;color:var(--a)!important;border-color:var(--b)!important;}
+.leaflet-popup-content-wrapper{background:rgba(4,16,32,.97);color:var(--t);border:1px solid var(--bb);border-radius:4px;}
+.leaflet-popup-tip{background:var(--bb);}
+.leaflet-popup-content{font-family:'Rajdhani',sans-serif;font-size:12px;margin:9px 11px;}
+.cmk{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:16px;filter:drop-shadow(0 0 4px rgba(0,200,255,.5));}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--a2);box-shadow:0 0 5px var(--a2);display:inline-block;margin-right:4px;animation:bl 2s infinite;}
+@keyframes bl{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ANALYSIS POPUP */
+.ap{min-width:240px;max-width:300px;}
+.apb{height:6px;border-radius:2px;}
+
+/* WEATHER PAGE */
+#wx-pg{flex-direction:column;overflow-y:auto;background:var(--bg);}
+.wxwrap{padding:14px;max-width:960px;margin:0 auto;width:100%;}
+.wxloc{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--td);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.wxloc span{color:var(--a2);}
+
+/* Current conditions big card */
+.wxnow{background:linear-gradient(135deg,rgba(0,40,80,.8),rgba(0,20,50,.9));border:1px solid var(--bb);border-radius:8px;padding:18px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+@media(max-width:700px){.wxnow{grid-template-columns:1fr 1fr;}}
+.wxbig{text-align:center;padding:10px;background:rgba(0,0,0,.2);border-radius:6px;}
+.wxbig-icon{font-size:28px;margin-bottom:4px;}
+.wxbig-val{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--a);line-height:1;}
+.wxbig-lbl{font-size:9px;color:var(--td);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+.wxbig-sub{font-size:10px;color:var(--t);margin-top:2px;}
+
+/* Sea condition bar */
+.seabar{background:var(--card);border:1px solid var(--b);border-radius:6px;padding:12px;margin-bottom:14px;}
+.seabar-title{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--td);margin-bottom:10px;}
+.seagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;}
+.seaitem{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);border-radius:4px;padding:8px 10px;}
+.seaitem-icon{font-size:18px;flex-shrink:0;}
+.seaitem-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--a);font-weight:700;}
+.seaitem-lbl{font-size:9px;color:var(--td);text-transform:uppercase;letter-spacing:1px;}
+
+/* Fishing condition meter */
+.fishcond{background:var(--card);border:1px solid var(--b);border-radius:6px;padding:12px;margin-bottom:14px;}
+.fcmeter{height:12px;border-radius:6px;background:rgba(0,0,0,.4);overflow:hidden;margin:8px 0;}
+.fcbar{height:100%;border-radius:6px;transition:width 1s ease;}
+.fcgood{background:linear-gradient(90deg,#005020,var(--a2));}
+.fcmid{background:linear-gradient(90deg,#503000,var(--w));}
+.fcbad{background:linear-gradient(90deg,#500000,var(--r));}
+
+/* Hourly forecast */
+.wxhour{background:var(--card);border:1px solid var(--b);border-radius:6px;padding:12px;margin-bottom:14px;}
+.hscroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;}
+.hscroll::-webkit-scrollbar{height:3px;}
+.hscroll::-webkit-scrollbar-thumb{background:var(--b);}
+.hcard{flex-shrink:0;background:rgba(0,0,0,.25);border:1px solid var(--b);border-radius:5px;padding:8px 10px;text-align:center;min-width:64px;transition:border-color .2s;}
+.hcard:hover{border-color:var(--a);}
+.hcard.now{border-color:var(--a2);background:rgba(0,255,157,.05);}
+.htime{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--td);margin-bottom:5px;}
+.hicon{font-size:18px;margin-bottom:4px;}
+.htemp{font-family:'Orbitron',monospace;font-size:11px;color:var(--a);font-weight:700;}
+.hwind{font-size:9px;color:var(--t);margin-top:3px;}
+.hwave{font-size:9px;color:var(--a2);}
+
+/* 7-day forecast */
+.wx7{background:var(--card);border:1px solid var(--b);border-radius:6px;padding:12px;margin-bottom:14px;}
+.dayrow{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.04);}
+.dayrow:last-child{border-bottom:none;}
+.dayname{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--t);width:42px;flex-shrink:0;}
+.dayicon{font-size:16px;width:24px;text-align:center;flex-shrink:0;}
+.daytemp{font-size:12px;width:80px;flex-shrink:0;}
+.daytmax{color:var(--a3);font-weight:700;}
+.daytmin{color:var(--a);margin-left:6px;}
+.daybar-wrap{flex:1;background:rgba(0,0,0,.3);border-radius:2px;height:5px;overflow:hidden;}
+.daybar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--a),var(--a2));}
+.daywind{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--td);width:70px;text-align:right;flex-shrink:0;}
+.daywave{font-size:9px;color:var(--a2);width:36px;text-align:right;flex-shrink:0;}
+
+/* Alerts */
+.wxalert{background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.3);border-radius:5px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--t);display:none;}
+.wxalert.show{display:block;}
+.wxalert-title{color:var(--r);font-weight:700;font-family:'Orbitron',monospace;font-size:10px;margin-bottom:4px;}
+.wxwarn{background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.3);}
+.wxwarn .wxalert-title{color:var(--w);}
+
+/* ── HAMBURGER ── */
+#hambtn{display:none;background:none;border:1px solid var(--bb);color:var(--a);padding:6px 10px;border-radius:4px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+
+/* ── MOBİL MENÜ OVERLAY ── */
+#mobmenu{display:none;position:fixed;inset:0;background:rgba(2,11,20,.98);z-index:4000;flex-direction:column;}
+#mobmenu.open{display:flex;}
+#mobmenu-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--b);flex-shrink:0;}
+#mobmenu-logo{font-family:'Orbitron',monospace;font-size:15px;font-weight:900;color:var(--a);letter-spacing:2px;}
+#mobmenu-logo b{color:var(--a2);}
+#mobmenu-close{background:none;border:1px solid var(--b);color:var(--r);padding:7px 14px;border-radius:4px;cursor:pointer;font-size:15px;}
+#mobmenu-body{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+.mob-navitem{display:flex;align-items:center;gap:12px;padding:15px 16px;background:rgba(0,200,255,.04);border:1px solid var(--b);border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;color:var(--t);transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.mob-navitem:hover,.mob-navitem.on{background:rgba(0,200,255,.12);border-color:var(--a);color:var(--a);}
+.mob-navitem.adm{border-color:rgba(255,170,0,.4);color:var(--w);}
+.mob-navitem.adm.on{background:rgba(255,170,0,.1);}
+.mob-navitem-icon{font-size:22px;width:30px;text-align:center;flex-shrink:0;}
+#mobmenu-footer{padding:14px 16px;border-top:1px solid var(--b);flex-shrink:0;}
+#mobmenu-user{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--td);margin-bottom:10px;}
+.mob-weather{display:flex;flex-wrap:wrap;gap:6px;}
+.mob-wi{flex:1;min-width:calc(50% - 3px);background:var(--card);border:1px solid var(--b);border-radius:4px;padding:6px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--t);}
+.mob-wi span{color:var(--a);font-weight:700;}
+
+/* ── ALT NAV BAR ── */
+#botnav{display:none;position:fixed;bottom:0;left:0;right:0;height:56px;background:var(--panel);border-top:1px solid var(--b);z-index:1500;}
+#botnav-inner{display:flex;height:100%;}
+.bnitem{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;border:none;background:none;color:var(--td);-webkit-tap-highlight-color:transparent;font-family:'Rajdhani',sans-serif;padding:0;transition:color .15s;}
+.bnitem.on{color:var(--a);}
+.bnitem-icon{font-size:18px;line-height:1;}
+.bnitem-lbl{font-size:8px;letter-spacing:.5px;text-transform:uppercase;}
+
+/* ── FİREBASE DURUM ── */
+#fbst{position:fixed;bottom:64px;right:10px;z-index:1400;font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 8px;border-radius:3px;background:rgba(2,11,20,.9);border:1px solid var(--b);color:var(--td);transition:all .4s;pointer-events:none;display:none;}
+#fbst.ok{border-color:var(--a2);color:var(--a2);display:block;}
+#fbst.err{border-color:var(--r);color:var(--r);display:block;}
+#fbst.sync{border-color:var(--a);color:var(--a);display:block;}
+
+/* ══ TABLET ≤ 960px ══ */
+@media(max-width:960px){
+  #wbar .wi:nth-child(3),#wbar .wi:nth-child(4){display:none;}
+  #lp{width:230px;}
+  #rp{width:210px;}
+}
+
+/* ══ MOBİL ≤ 768px ══ */
+@media(max-width:768px){
+  html,body{overflow:auto;}
+  #hdr{padding:8px 12px;gap:6px;}
+  .logo{font-size:13px;letter-spacing:1px;}
+  #navtabs{display:none !important;}
+  #wbar{display:none !important;}
+  .mtog{display:none !important;}
+  #captbtn{padding:6px 10px;}
+  #captname{font-size:11px;}
+  #hambtn{display:flex;align-items:center;justify-content:center;margin-left:auto;}
+
+  /* Layout - mobilde overflow geri açık */
+  html,body{height:auto;overflow:auto;}
+  #main{flex-direction:column;overflow:visible;height:auto;min-height:0;flex:none;}
+  .pg{flex-direction:column;flex:none;}
+  .pg.on{flex:none;}
+
+  /* Map sayfası */
+  #map-pg{flex-direction:column;}
+  #lp{width:100%;max-height:none;height:auto;overflow-y:visible;border-right:none;border-bottom:1px solid var(--b);flex-shrink:0;min-height:0;}
+  #rp{width:100%;max-height:none;height:auto;overflow-y:visible;border-left:none;border-top:1px solid var(--b);flex-shrink:0;min-height:0;}
+
+  /* Harita konteyneri — sabit yükseklik */
+  #mc{width:100%;height:60vw !important;min-height:260px;max-height:420px;flex:none;order:-1;position:relative;}
+  #map{position:absolute;top:0;left:0;right:0;bottom:0;height:100% !important;}
+
+  /* Touch-friendly form */
+  .ri,.rs{padding:10px 12px;font-size:14px;min-height:44px;}
+  textarea.ri{min-height:72px;}
+  .btn{padding:12px 14px;font-size:9px;min-height:44px;}
+  .btn.sm{padding:8px 12px;font-size:8px;min-height:36px;}
+  select.rs{min-height:44px;}
+  .fc{padding:10px;}
+  .fn{font-size:14px;}
+
+  /* Chat */
+  #chat-pg{min-height:calc(100vh - 56px);height:auto;}
+  #chmsg{min-height:300px;flex:none;}
+  #chinp{padding:10px 12px;font-size:15px;min-height:44px;}
+  #chsnd{padding:10px 16px;min-height:44px;}
+
+  /* Auth */
+  #auth-pg{align-items:flex-start;padding:20px 12px;min-height:auto;height:auto;}
+  .abox{width:100%;max-width:440px;margin:0 auto;}
+  .atab{padding:10px;font-size:10px;min-height:44px;}
+
+  /* Admin */
+  #admin-pg{height:auto;min-height:auto;}
+  .adgr{grid-template-columns:1fr 1fr;}
+  .urow{flex-wrap:wrap;}
+  .urn{width:100%;margin-bottom:4px;}
+
+  /* Weather */
+  #wx-pg{height:auto;min-height:auto;}
+  .wxnow{grid-template-columns:1fr 1fr;}
+  .wxbig-val{font-size:18px;}
+  .hcard{min-width:56px;}
+
+  /* Sources */
+  #src-pg{padding:14px;height:auto;}
+
+  /* Banner ve sonar */
+  #nmbanner{bottom:64px;}
+  #sonar{bottom:66px;}
+
+  /* Popup */
+  .leaflet-popup-content-wrapper{max-width:86vw;}
+
+  /* Bottom nav göster */
+  #botnav{display:block;}
+  body{padding-bottom:56px;}
+}
+
+/* ══ KÜÇÜK MOBİL ≤ 420px ══ */
+@media(max-width:420px){
+  .logo{font-size:11px;}
+  #mc{height:55vw !important;min-height:220px;}
+  .adgr{grid-template-columns:1fr;}
+  .mob-navitem{padding:13px 14px;font-size:15px;}
+  .stn{font-size:20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div id="hdr">
+  <div class="logo">⚓ BALIKÇI <b>RADARI</b></div>
+  <div id="navtabs">
+    <button class="ntab on"  onclick="goPg('map-pg',this)">🗺 HARİTA</button>
+    <button class="ntab"     onclick="goWx(this)">🌤 HAVA DURUMU</button>
+    <button class="ntab"     onclick="reqLog('chat-pg',this)">💬 SOHBET</button>
+    <button class="ntab"     onclick="goPg('src-pg',this)">📊 VERİ KAYNAKLARI</button>
+    <button class="ntab adm" id="admBtn" onclick="goAdmin(this)" style="display:none">⚙ ADMİN</button>
+  </div>
+  <div id="wbar">
+    <div class="wi ld" id="wiw">🧭<span id="wiwv">—</span></div>
+    <div class="wi ld" id="wit">🌡<span id="witv">—</span></div>
+    <div class="wi ld" id="wip">📊<span id="wipv">—</span></div>
+    <div class="wi ld" id="wiwa">🌊<span id="wiwav">—</span></div>
+    <button class="mpb" style="padding:2px 6px" onclick="fetchW()">↻</button>
+  </div>
+  <div class="mtog">
+    <button class="mbt on" onclick="setLyr('sat',this)">UYDU</button>
+    <button class="mbt"    onclick="setLyr('str',this)">HARİTA</button>
+  </div>
+  <div id="captbtn" onclick="openAuth()">
+    <span>🎣</span><span id="captname">GİRİŞ YAP</span>
+  </div>
+  <button id="hambtn" onclick="openMobMenu()" aria-label="Menü">☰</button>
+</div>
+
+<!-- ═══ MOBİL MENÜ ═══ -->
+<div id="mobmenu">
+  <div id="mobmenu-hdr">
+    <div id="mobmenu-logo">⚓ BALIKÇI <b>RADARI</b></div>
+    <button id="mobmenu-close" onclick="closeMobMenu()">✕</button>
+  </div>
+  <div id="mobmenu-body">
+    <div class="mob-navitem on"  id="mn-map" onclick="mobGo('map-pg','mn-map','bn-map')"><span class="mob-navitem-icon">🗺</span>HARİTA</div>
+    <div class="mob-navitem"     id="mn-wx"  onclick="mobGoWx()"><span class="mob-navitem-icon">🌤</span>HAVA DURUMU</div>
+    <div class="mob-navitem"     id="mn-ch"  onclick="mobGoReq('chat-pg','mn-ch','bn-ch')"><span class="mob-navitem-icon">💬</span>SOHBET</div>
+    <div class="mob-navitem"     id="mn-src" onclick="mobGo('src-pg','mn-src','bn-src')"><span class="mob-navitem-icon">📊</span>VERİ KAYNAKLARI</div>
+    <div class="mob-navitem adm" id="mn-adm" style="display:none" onclick="mobGoAdmin()"><span class="mob-navitem-icon">⚙</span>ADMİN</div>
+    <div class="mob-navitem"     onclick="openAuth();closeMobMenu()"><span class="mob-navitem-icon">👤</span>HESABIM</div>
+  </div>
+  <div id="mobmenu-footer">
+    <div id="mobmenu-user">Giriş yapılmadı</div>
+    <div class="mob-weather">
+      <div class="mob-wi">🧭 <span id="mob-wind">—</span></div>
+      <div class="mob-wi">🌡 <span id="mob-temp">—</span></div>
+      <div class="mob-wi">📊 <span id="mob-pres">—</span></div>
+      <div class="mob-wi">🌊 <span id="mob-wave">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ALT NAV BAR ═══ -->
+<div id="botnav">
+  <div id="botnav-inner">
+    <button class="bnitem on" id="bn-map" onclick="mobGo('map-pg','mn-map','bn-map')"><span class="bnitem-icon">🗺</span><span class="bnitem-lbl">HARİTA</span></button>
+    <button class="bnitem"    id="bn-wx"  onclick="mobGoWx()"><span class="bnitem-icon">🌤</span><span class="bnitem-lbl">HAVA</span></button>
+    <button class="bnitem"    id="bn-ch"  onclick="mobGoReq('chat-pg','mn-ch','bn-ch')"><span class="bnitem-icon">💬</span><span class="bnitem-lbl">SOHBET</span></button>
+    <button class="bnitem"    id="bn-src" onclick="mobGo('src-pg','mn-src','bn-src')"><span class="bnitem-icon">📊</span><span class="bnitem-lbl">VERİ</span></button>
+    <button class="bnitem"    id="bn-ham" onclick="openMobMenu()"><span class="bnitem-icon">☰</span><span class="bnitem-lbl">MENÜ</span></button>
+  </div>
+</div>
+
+<!-- ═══ FİREBASE DURUM ═══ -->
+<div id="fbst">⬡ FB</div>
+
+<!-- ═══ MAIN ═══ -->
+<div id="main">
+
+<!-- ─── MAP PAGE ─── -->
+<div class="pg on" id="map-pg">
+  <!-- LEFT -->
+  <div id="lp">
+    <div class="sec">
+      <div class="stl">AI TAHMİN MOTORU</div>
+      <div id="fpreds"></div>
+      <div style="font-size:9px;color:var(--td);text-align:center;margin-top:2px">📍 Haritaya tıkla → Nokta analizi</div>
+    </div>
+    <div class="sec">
+      <div class="stl">NOKTA TAVSİYESİ</div>
+      <div id="sprecs"></div>
+    </div>
+    <div class="sec">
+      <div class="stl">MANUEL VERİ</div>
+      <div class="ir"><div class="il">Rüzgar Yönü</div>
+        <select class="rs" id="wdsel" onchange="recalc()">
+          <option value="poyraz">Poyraz (KD)</option>
+          <option value="lodos">Lodos (GB)</option>
+          <option value="karayel">Karayel (KB)</option>
+          <option value="gündoğusu">Gündoğusu (D)</option>
+          <option value="kıble">Kıble (G)</option>
+          <option value="batı">Batı / İmbat (B)</option>
+          <option value="yıldız">Yıldız (K)</option>
+        </select>
+      </div>
+      <div class="ir"><div class="il">Su Sıcaklığı (°C)</div><input type="number" class="ri" id="wtemp" value="16" min="4" max="30" onchange="recalc()"></div>
+      <div class="ir"><div class="il">Zemin Tipi</div>
+        <select class="rs" id="gtype" onchange="recalc()">
+          <option value="kayalik">Kayalık</option>
+          <option value="kumlu">Kumlu</option>
+          <option value="sazlik">Sazlık/Çayır</option>
+          <option value="derin">Derin Su (30m+)</option>
+          <option value="karisik">Karışık</option>
+        </select>
+      </div>
+      <button class="btn" onclick="recalc()">🔄 HESAPLA</button>
+    </div>
+    <div class="sec">
+      <div class="stl">AV GÜNLÜĞÜ</div>
+      <button class="btn g" onclick="togNM()">📍 HARİTAYA NOT BIRAK</button>
+      <button class="btn r" onclick="clearMN()" style="margin-top:5px">🗑 Notlarımı Sil</button>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div id="mc">
+    <div id="map"></div>
+    <div id="sonar"><div class="sr"></div><div class="sr"></div><div class="sr"></div><div class="soc"></div></div>
+    <div id="mctrl">
+      <button class="mpb loc" id="locbtn" onclick="locateMe()">📡 KONUMUMU BUL</button>
+      <button class="mpb" onclick="fly(40.395,26.68,9)">📍 Çanakkale</button>
+      <button class="mpb" onclick="fly(40.977,27.514,10)">📍 Tekirdağ</button>
+      <button class="mpb" onclick="fly(38.423,27.142,10)">📍 İzmir</button>
+      <button class="mpb" onclick="fly(36.886,30.703,10)">📍 Antalya</button>
+      <button class="mpb" onclick="fly(41.02,28.97,10)">📍 İstanbul</button>
+      <button class="mpb" onclick="fly(37.22,33.27,10)">📍 Mersin</button>
+    </div>
+    <div id="nmbanner">🎯 HARITAYA TIKLAYIN — NOT BIRAK</div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="rp">
+    <div class="sec">
+      <div class="stl">📡 YAKIN NOKTALAR</div>
+      <div id="locst" style="font-size:10px;color:var(--td);text-align:center;padding:6px 0">
+        Konum alınmadı.<br>
+        <button class="btn loc" style="margin-top:6px;font-size:8px" onclick="locateMe()">📡 KONUMUMU BUL</button>
+      </div>
+      <div id="nearby"></div>
+    </div>
+    <div class="sec" style="flex-shrink:0">
+      <div class="stl"><span class="sdot"></span>TOPLULUK GÜNLÜĞÜ</div>
+    </div>
+    <div id="loglist" style="overflow-y:auto;flex:1;padding:6px;"></div>
+  </div>
+</div>
+
+<!-- ─── CHAT PAGE ─── -->
+<div class="pg" id="chat-pg">
+  <div id="chdr"><h2>💬 KAPTAN SOHBET ODASI</h2><span class="onl" id="onlc">● 1 Çevrimiçi</span></div>
+  <div id="chmsg"></div>
+  <div id="chia">
+    <input id="chinp" type="text" placeholder="Mesajınızı yazın... (Enter)" maxlength="300" onkeydown="if(event.key==='Enter')sendChat()">
+    <button id="chsnd" onclick="sendChat()">GÖNDER</button>
+  </div>
+</div>
+
+<!-- ─── AUTH PAGE ─── -->
+<div class="pg" id="auth-pg">
+  <div class="abox">
+    <div class="alogo">⚓ BALIKÇI <b>RADARI</b></div>
+    <div class="asub">Kaptanlar için deniz istihbarat platformu</div>
+    <div class="atabs">
+      <div class="atab on" id="atl" onclick="swAuth('login')">GİRİŞ YAP</div>
+      <div class="atab"    id="atr" onclick="swAuth('reg')">KAYIT OL</div>
+    </div>
+    <div id="afl">
+      <div class="ir"><div class="il">Kullanıcı Adı</div><input class="ri" id="liu" type="text" placeholder="kaptan_ahmet" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="ir"><div class="il">Şifre</div><input class="ri" id="lip" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="aerr" id="lerr"></div>
+      <button class="btn" style="margin-top:9px" onclick="doLogin()">⚓ GİRİŞ YAP</button>
+      <div style="text-align:center;margin-top:7px;font-size:9px;color:var(--td)"> <span style="color:var(--a)"></span></div>
+    </div>
+    <div id="afr" style="display:none">
+      <div class="ir"><div class="il">Kaptan Adı</div><input class="ri" id="rnm" type="text" placeholder="Kaptan Ahmet" maxlength="30"></div>
+      <div class="ir"><div class="il">Kullanıcı Adı</div><input class="ri" id="ruu" type="text" placeholder="kaptan_ahmet" maxlength="20"></div>
+      <div class="ir"><div class="il">Şifre (min 6 karakter)</div><input class="ri" id="rup" type="password" placeholder="••••••••"></div>
+      <div class="ir"><div class="il">Bölge / Liman</div><input class="ri" id="rrg" type="text" placeholder="Çanakkale" maxlength="30"></div>
+      <div class="aerr" id="rerr"></div>
+      <button class="btn g" style="margin-top:9px" onclick="doReg()">✅ KAYIT OL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── WEATHER PAGE ─── -->
+<div class="pg" id="wx-pg">
+  <div class="wxwrap">
+    <div class="wxloc" id="wxloc">📡 Konum: <span id="wxlocname">Harita merkezi</span> &nbsp;|&nbsp; <span id="wxupdtime">—</span> &nbsp;
+      <button class="btn sm" style="font-size:7px;padding:3px 8px" onclick="loadWxPage()">↻ YENİLE</button>
+    </div>
+
+    <!-- Alert boxes -->
+    <div class="wxalert" id="wxalert-storm"><div class="wxalert-title">⛔ FIRTINA UYARISI</div><div id="wxalert-storm-txt"></div></div>
+    <div class="wxalert wxwarn" id="wxalert-wind"><div class="wxalert-title">⚠️ KUVVETLİ RÜZGAR</div><div id="wxalert-wind-txt"></div></div>
+    <div class="wxalert wxwarn" id="wxalert-wave"><div class="wxalert-title">🌊 YÜKSEK DALGA</div><div id="wxalert-wave-txt"></div></div>
+
+    <!-- Fishing condition meter -->
+    <div class="fishcond" id="wxfishcond">
+      <div class="seabar-title">🎣 BALIKÇILIK KOŞULU</div>
+      <div id="wxfclbl" style="font-family:'Orbitron',monospace;font-size:16px;color:var(--a2);margin-bottom:4px">—</div>
+      <div class="fcmeter"><div class="fcbar fcgood" id="wxfcbar" style="width:0%"></div></div>
+      <div id="wxfcdetail" style="font-size:11px;color:var(--t);line-height:1.6;margin-top:4px"></div>
+    </div>
+
+    <!-- Current conditions -->
+    <div class="seabar-title" style="margin-bottom:6px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--td)">ANLLIK KOŞULLAR</div>
+    <div class="wxnow" id="wxnow">
+      <div class="wxbig"><div class="wxbig-icon">🌡️</div><div class="wxbig-val" id="wxc-temp">—</div><div class="wxbig-lbl">Hava Sıc.</div><div class="wxbig-sub" id="wxc-feel">Hissedilen —</div></div>
+      <div class="wxbig"><div class="wxbig-icon">🧭</div><div class="wxbig-val" id="wxc-wind">—</div><div class="wxbig-lbl">Rüzgar</div><div class="wxbig-sub" id="wxc-gust">Ani — m/s</div></div>
+      <div class="wxbig"><div class="wxbig-icon">🌊</div><div class="wxbig-val" id="wxc-wave">—</div><div class="wxbig-lbl">Dalga</div><div class="wxbig-sub" id="wxc-wper">Periyot —s</div></div>
+      <div class="wxbig"><div class="wxbig-icon">📊</div><div class="wxbig-val" id="wxc-pres">—</div><div class="wxbig-lbl">Basınç</div><div class="wxbig-sub" id="wxc-ptend">— eğilim</div></div>
+    </div>
+
+    <!-- Extra conditions grid -->
+    <div class="seabar" id="wxsea">
+      <div class="seabar-title">DENİZ & ATMOSFER</div>
+      <div class="seagrid">
+        <div class="seaitem"><div class="seaitem-icon">💧</div><div class="seaitem-info"><div class="seaitem-val" id="wxc-hum">—</div><div class="seaitem-lbl">Nem %</div></div></div>
+        <div class="seaitem"><div class="seaitem-icon">☁️</div><div class="seaitem-info"><div class="seaitem-val" id="wxc-cloud">—</div><div class="seaitem-lbl">Bulutluluk</div></div></div>
+        <div class="seaitem"><div class="seaitem-icon">🌧️</div><div class="seaitem-info"><div class="seaitem-val" id="wxc-rain">—</div><div class="seaitem-lbl">Yağış mm/h</div></div></div>
+        <div class="seaitem"><div class="seaitem-icon">👁️</div><div class="seaitem-info"><div class="seaitem-val" id="wxc-vis">—</div><div class="seaitem-lbl">Görüş km</div></div></div>
+        <div class="seaitem"><div class="seaitem-icon">☀️</div><div class="seaitem-info"><div class="seaitem-val" id="wxc-uv">—</div><div class="seaitem-lbl">UV İndeks</div></div></div>
+        <div class="seaitem"><div class="seaitem-icon">🌡️</div><div class="seaitem-info"><div class="seaitem-val" id="wxc-dewp">—</div><div class="seaitem-lbl">Çiy Noktası</div></div></div>
+      </div>
+    </div>
+
+    <!-- 24h hourly -->
+    <div class="wxhour">
+      <div class="seabar-title" style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--td);margin-bottom:8px">SAATLİK TAHMİN (24 SAAT)</div>
+      <div class="hscroll" id="wxhours"></div>
+    </div>
+
+    <!-- 7-day -->
+    <div class="wx7">
+      <div class="seabar-title" style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--td);margin-bottom:8px">7 GÜNLÜK TAHMİN</div>
+      <div id="wx7days"></div>
+    </div>
+
+    <div id="wxloading" style="text-align:center;padding:40px;color:var(--td);font-family:'Share Tech Mono',monospace;font-size:11px">⏳ Hava durumu yükleniyor...</div>
+  </div>
+</div>
+<div class="pg" id="admin-pg">
+  <div class="admc">
+    <div class="admh">⚠ YÖNETİM PANELİ</div>
+    <div class="adgr" id="admst"></div>
+    <div class="adsec"><div class="adst">KULLANICI YÖNETİMİ</div><div id="admu"></div></div>
+    <div class="adsec"><div class="adst">NOT / GÜNLÜK YÖNETİMİ</div><div id="admn"></div></div>
+    <div class="adsec">
+      <div class="adst">💬 SOHBET MODERASYONU</div>
+      <div style="font-size:9px;color:var(--td);margin-bottom:8px">Son 30 mesaj — 🗑️ butonuyla sil, tüm cihazlardan kalkar</div>
+      <div id="admc"><div style="color:var(--td);font-size:10px">Yükleniyor...</div></div>
+    </div>
+    <div class="adsec">
+      <div class="adst">DUYURU GÖNDER</div>
+      <div style="display:flex;gap:7px">
+        <input class="ri" id="adann" placeholder="Tüm kaptanlara duyuru..." style="flex:1">
+        <button class="btn o sm" onclick="admAnn()">📢 GÖNDER</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DATA SOURCES PAGE ─── -->
+<div class="pg" id="src-pg">
+  <div class="srch">📊 VERİ KAYNAKLARI & DOĞRULUK</div>
+
+  <div class="warn-box">
+    <strong>⚠ Önemli Uyarı:</strong> Bu uygulama gerçek zamanlı hava durumu verisini açık API'lerden çekmektedir. Ancak balık tahmin algoritması; bilimsel literatür, balıkçılık rehberleri ve deneyimsel kurallara dayalı <strong>istatistiksel bir model</strong>dir. Gerçek av sonuçları farklılık gösterebilir. Ticari kararlar için profesyonel danışmanlık alın.
+  </div>
+
+  <div class="srcsec">
+    <h3>CANLI VERİ KAYNAKLARI</h3>
+    <div class="src-item">
+      <div class="src-name">Open-Meteo API</div>
+      <div class="src-url">api.open-meteo.com</div>
+      <div class="src-desc">Anlık hava durumu: rüzgar hızı & yönü, hava sıcaklığı, atmosfer basıncı, dalga yüksekliği. Avrupa meteoroloji modellerine (ECMWF, GFS) dayalı, saatlik güncelleme. Tamamen ücretsiz ve açık kaynaklı.</div>
+      <span class="src-badge sb-free">ÜCRETSİZ</span><span class="src-badge sb-live">CANLI</span><span class="src-badge sb-open">AÇIK KAYNAK</span>
+    </div>
+    <div class="src-item">
+      <div class="src-name">Nominatim / OpenStreetMap</div>
+      <div class="src-url">nominatim.openstreetmap.org</div>
+      <div class="src-desc">Harita üzerinde tıklanan koordinatları il, ilçe ve mahalle isimlerine çevirmek için kullanılır (ters coğrafi kodlama). OSM topluluğu tarafından sürdürülür.</div>
+      <span class="src-badge sb-free">ÜCRETSİZ</span><span class="src-badge sb-open">AÇIK KAYNAK</span>
+    </div>
+    <div class="src-item">
+      <div class="src-name">Esri World Imagery (Uydu)</div>
+      <div class="src-url">server.arcgisonline.com</div>
+      <div class="src-desc">Uydu görüntü katmanı. Kıyı yapısı, sığlıklar ve dip morfolojisini görsel olarak değerlendirmeye yardımcı olur.</div>
+      <span class="src-badge sb-free">ÜCRETSİZ</span>
+    </div>
+    <div class="src-item">
+      <div class="src-name">CartoDB Dark Labels</div>
+      <div class="src-url">basemaps.cartocdn.com</div>
+      <div class="src-desc">Uydu görüntüsü üzerindeki il, ilçe, mahalle ve kıyı adı etiketleri. Gece moduna uygun koyu arka planlı etiket katmanı.</div>
+      <span class="src-badge sb-free">ÜCRETSİZ</span>
+    </div>
+    <div class="src-item">
+      <div class="src-name">Tarayıcı Geolocation API</div>
+      <div class="src-url">navigator.geolocation (W3C standart)</div>
+      <div class="src-desc">Kullanıcının GPS, WiFi veya hücre ağı üzerinden anlık konumunu alır. Hassasiyet ortama göre değişir: GPS açıkta ~5m, kapalı alanda ~100m. Konum hiçbir zaman sunucuya gönderilmez, yalnızca tarayıcıda işlenir.</div>
+      <span class="src-badge sb-live">CANLI GPS</span><span class="src-badge sb-free">GİZLİLİK KORUMAL</span>
+    </div>
+  </div>
+
+  <div class="srcsec">
+    <h3>TAHMİN ALGORİTMASI KAYNAKLARI</h3>
+    <div class="src-item">
+      <div class="src-name">Balık Davranış Modeli</div>
+      <div class="src-desc">Tahmin motoru aşağıdaki bilimsel ve pratik kaynaklara dayanmaktadır:<br><br>
+        <b style="color:var(--a)">• Su Sıcaklığı Korelasyonu:</b> Her tür için FAO (BM Gıda ve Tarım Örgütü) balıkçılık veri tabanındaki optimum sıcaklık aralıkları kullanılmıştır.<br><br>
+        <b style="color:var(--a)">• Rüzgar/Akıntı Etkisi:</b> Türkiye Denizcilik ve Haberleşme Bakanlığı kılavuz yayınları ile Türk balıkçılık rehberleri (Balik.com.tr literatürü) referans alınmıştır.<br><br>
+        <b style="color:var(--a)">• Mevsimsellik:</b> TÜİK (Türkiye İstatistik Kurumu) deniz avı istatistikleri ve Su Ürünleri Kanunu av yasakları takvimi baz alınmıştır.<br><br>
+        <b style="color:var(--a)">• Zemin Tercihi:</b> İTÜ Deniz Bilimleri Enstitüsü ve Ege Üniversitesi Su Ürünleri Fakültesi araştırmalarından derlenen habitat verileri kullanılmıştır.
+      </div>
+      <span class="src-badge sb-est">İSTATİSTİKSEL MODEL</span><span class="src-badge sb-est">UZMAN DERLEMESI</span>
+    </div>
+    <div class="src-item">
+      <div class="src-name">Kıyı Noktaları Veritabanı</div>
+      <div class="src-desc">30+ kıyı noktası; coğrafi koordinatlar OpenStreetMap'ten, zemin ve habitat tipi verileri ise Türkiye kıyı haritaları ile balıkçılık forumlarından (Balikavci.net, Spincast.org) derlenmiştir. Koordinatlar Google Maps ile karşılaştırılarak doğrulanmıştır.</div>
+      <span class="src-badge sb-open">OSM KOORDINAT</span><span class="src-badge sb-est">FORUM DERLEMESI</span>
+    </div>
+  </div>
+
+  <div class="srcsec">
+    <h3>DOĞRULUĞU NASIL DEĞERLENDİREBİLİRSİNİZ?</h3>
+    <div class="src-item">
+      <div class="src-name">✅ Güvenilir Veriler</div>
+      <div class="src-desc">
+        <b style="color:var(--a2)">Hava durumu (rüzgar, basınç):</b> ECMWF/GFS modellerinden alınan gerçek zamanlı veri. Doğruluk oranı %90+.<br><br>
+        <b style="color:var(--a2)">Harita konumu:</b> GPS koordinatları W3C standardında, OpenStreetMap isimlendirmesi topluluk doğrulamalı.<br><br>
+        <b style="color:var(--a2)">Mesafe hesabı:</b> Haversine formülü ile hassas küresel mesafe hesabı.
+      </div>
+    </div>
+    <div class="src-item">
+      <div class="src-name">⚠️ Tahminsel Veriler</div>
+      <div class="src-desc">
+        <b style="color:var(--w)">Balık olasılığı (%):</b> Kural tabanlı sezgisel model. Gerçek av şansını değil, koşulların o tür için uygunluk derecesini gösterir.<br><br>
+        <b style="color:var(--w)">Su sıcaklığı:</b> Hava sıcaklığından tahmin edilir (−2°C). Gerçek deniz yüzeyi sıcaklığı için CMEMS/Copernicus servisleri kullanılabilir.<br><br>
+        <b style="color:var(--w)">Zemin tipi:</b> Kullanıcı tarafından manuel seçilir; otomatik batimetri veri entegrasyonu henüz mevcut değildir.
+      </div>
+    </div>
+    <div class="src-item">
+      <div class="src-name">📡 Uygulamayı Daha Doğru Kullanmak İçin</div>
+      <div class="src-desc">
+        1. Gerçek su sıcaklığını balık termometresiyle ölçüp manuel girin.<br>
+        2. Bulunduğunuz zemin tipini (kayalık/kumlu vb.) elle seçin.<br>
+        3. Topluluk notlarını okuyun — diğer kaptanların gerçek gözlemleri en değerli veridir.<br>
+        4. Tahminleri yalnızca yönlendirici olarak kullanın, nihai karar tecrübenize aittir.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /#main -->
+
+<!-- MODAL -->
+<div id="mov" onclick="if(event.target===this)hidM()">
+  <div class="modal" id="amod"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+const K1='br_notes_v5',K2='br_users_v5',K3='br_sess_v5',K4='br_chat_v5';
+function lg(k){try{return JSON.parse(localStorage.getItem(k));}catch{return null;}}
+function ls(k,v){localStorage.setItem(k,JSON.stringify(v));}
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let mapO,satL,strL;
+let nmMode=false,nmMks=[],notes=[],users=[],chat=[];
+let CU=null,pendC=null,wdata={};
+let myLat=null,myLng=null,locMk=null;
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+function loadAll(){
+  notes=lg(K1)||[];
+  chat=lg(K4)||[];
+  users=lg(K2)||[];
+  if(!users.find(u=>u.un==='AyazEr'))
+    users.push({un:'AyazEr',pw:'AyAzEr1912SA',nm:'Kaptan Admin',role:'admin',region:'Merkez',banned:false,joined:Date.now()});
+  ls(K2,users);
+  const s=lg(K3);
+  if(s){CU=users.find(u=>u.un===s)||null;}
+}
+// ══════════════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════════════
+function initMap(){
+  mapO=L.map('map',{zoomControl:true}).setView([40.395,26.68],9);
+  satL=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+  strL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+  const lblL=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{maxZoom:19,pane:'shadowPane'});
+  satL.addTo(mapO);lblL.addTo(mapO);
+  mapO.on('click',e=>{
+    if(nmMode){pendC=e.latlng;shNM(e.latlng);}
+    else{shAnalysis(e.latlng);}
+  });
+  // Harita boyutu garantisi
+  for(const ms of [50,150,300,600,1200,2000])setTimeout(()=>mapO&&mapO.invalidateSize(true),ms);
+}
+
+function setLyr(t,btn){
+  document.querySelectorAll('.mbt').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(t==='sat'){mapO.removeLayer(strL);satL.addTo(mapO);}
+  else{mapO.removeLayer(satL);strL.addTo(mapO);}
+}
+function fly(la,ln,z){mapO.flyTo([la,ln],z,{duration:1.2});}
+
+// ══════════════════════════════════════════════════════
+// GEOLOCATION — robust implementation
+// ══════════════════════════════════════════════════════
+function locateMe(){
+  const btn=document.getElementById('locbtn');
+  const statEl=document.getElementById('locst');
+
+  if(!('geolocation' in navigator)){
+    statEl.innerHTML='<span style="color:var(--r)">❌ Tarayıcınız konum desteklemiyor.</span>';
+    return;
+  }
+
+  btn.textContent='⏳ Sinyal aranıyor...';
+  btn.style.opacity='0.7';
+  statEl.innerHTML='<div style="color:var(--a);font-size:10px">⏳ GPS sinyali bekleniyor...<br><span style="color:var(--td);font-size:9px">İzin kutusunu onaylayın</span></div>';
+
+  const opts={enableHighAccuracy:true,timeout:15000,maximumAge:60000};
+
+  navigator.geolocation.getCurrentPosition(
+    function onSuccess(pos){
+      myLat=pos.coords.latitude;
+      myLng=pos.coords.longitude;
+      const acc=Math.round(pos.coords.accuracy||0);
+
+      btn.textContent='📡 KONUMUM AKTİF';
+      btn.style.opacity='1';
+      btn.style.background='rgba(0,255,157,.12)';
+
+      // Fly to user
+      mapO.flyTo([myLat,myLng],13,{duration:1.5});
+
+      // Place animated pulse marker
+      if(locMk){mapO.removeLayer(locMk);}
+      const ic=L.divIcon({className:'',html:'<div class="lpm"></div>',iconSize:[22,22],iconAnchor:[11,11]});
+      locMk=L.marker([myLat,myLng],{icon:ic,zIndexOffset:2000}).addTo(mapO);
+      locMk.bindPopup(
+        `<div style="text-align:center;min-width:150px">
+          <div style="color:var(--a2);font-weight:700;font-family:'Orbitron',monospace;font-size:10px;margin-bottom:5px">📡 SİZ BURADASINIZ</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--td)">${myLat.toFixed(5)}, ${myLng.toFixed(5)}</div>
+          ${acc?`<div style="font-size:9px;color:var(--td);margin-top:3px">±${acc}m hassasiyet</div>`:''}
+        </div>`
+      ).openPopup();
+
+      // Show status in panel
+      statEl.innerHTML=`
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--a2);box-shadow:0 0 6px var(--a2);display:inline-block;flex-shrink:0"></span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--a2)">${myLat.toFixed(4)}, ${myLng.toFixed(4)}</span>
+        </div>
+        <div style="font-size:9px;color:var(--td);margin-bottom:4px">±${acc}m hassasiyet</div>
+      `;
+
+      // Fetch weather for user location
+      fetchWForCoord(myLat,myLng);
+      // Find nearby spots
+      findNearby(myLat,myLng);
+    },
+    function onError(err){
+      btn.textContent='📡 KONUMUMU BUL';
+      btn.style.opacity='1';
+      btn.style.background='';
+      const msgs={
+        1:'❌ Konum izni reddedildi.<br><span style="font-size:9px">Tarayıcı adres çubuğundaki kilit/bilgi ikonuna tıklayarak konum iznini açın.</span>',
+        2:'❌ Konum belirlenemedi.<br><span style="font-size:9px">GPS sinyali zayıf veya VPN kullanıyorsunuz.</span>',
+        3:'❌ Zaman aşımı.<br><span style="font-size:9px">Açık bir alanda tekrar deneyin.</span>'
+      };
+      statEl.innerHTML=`<div style="color:var(--r);font-size:10px;line-height:1.6">${msgs[err.code]||'❌ Bilinmeyen hata.'}</div>
+        <button class="btn g" style="margin-top:7px;font-size:8px" onclick="locateMe()">🔄 TEKRAR DENE</button>`;
+    },
+    opts
+  );
+}
+
+function haversine(la1,ln1,la2,ln2){
+  const R=6371,r=Math.PI/180;
+  const dLa=(la2-la1)*r,dLn=(ln2-ln1)*r;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLn/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ══════════════════════════════════════════════════════
+// NEARBY SPOTS DATABASE — 35 Turkish coastal spots
+// ══════════════════════════════════════════════════════
+const ALLSPOTS=[
+  {n:'Nara Burnu',la:40.2211,ln:26.3789,type:'kayalik',fish:['Çipura','Levrek','Lüfer','Eşkina','Orfoz'],desc:'Akıntılı kayalık, boğaz girişi'},
+  {n:'Kilitbahir Kayalıkları',la:40.1525,ln:26.3847,type:'kayalik',fish:['Levrek','Çipura','İskorpit','Mercan'],desc:'Derin kayalık, tüm mevsim'},
+  {n:'Gelibolu İskelesi',la:40.4072,ln:26.6742,type:'kumlu',fish:['Levrek','İstavrit','Kefal','Zargana'],desc:'Kumlu-sazlık karma'},
+  {n:'Çanakkale Boğazı',la:40.1430,ln:26.4050,type:'derin',fish:['Lüfer','Palamut','Torik','Kalamar','Eşkina'],desc:'Derin akıntı hattı, göç koridoru'},
+  {n:'Bozcaada Doğu Kıyı',la:39.8320,ln:26.1150,type:'kayalik',fish:['Çipura','Sinarit','Lüfer','Karagöz'],desc:'Temiz açık deniz, kayalık dip'},
+  {n:'Kepez Limanı Çıkışı',la:40.1758,ln:26.4461,type:'karisik',fish:['Lüfer','İstavrit','Kalamar','Tekir'],desc:'Karma zemin, liman çıkışı'},
+  {n:'Kilya Koyu',la:40.3950,ln:26.4900,type:'karisik',fish:['Çipura','Levrek','Kolyoz','Karagöz'],desc:'Korunaklı koy, karma ekosistem'},
+  {n:'Eceabat Kıyısı',la:40.1961,ln:26.3594,type:'kumlu',fish:['Levrek','Kefal','İstavrit','Barbun'],desc:'Kıyı kum tabanı'},
+  {n:'Kavak Koyu',la:40.3700,ln:26.4100,type:'sazlik',fish:['Levrek','Kefal','Sazan','Lipsoz'],desc:'Sazlık kıyı, levrek & kefal'},
+  {n:'Enez Deltası',la:40.7301,ln:26.1050,type:'sazlik',fish:['Levrek','Kefal','Sazan','Yayın Balığı'],desc:'Meriç ağzı, delta balıkçılığı'},
+  {n:'Hoşköy Kıyısı',la:40.8750,ln:27.1890,type:'karisik',fish:['Levrek','Lüfer','Çipura','Tekir'],desc:'Sakin koy, karma zemin'},
+  {n:'Tekirdağ İskelesi',la:40.9785,ln:27.5138,type:'kumlu',fish:['Levrek','İstavrit','Kefal','Dil Balığı'],desc:'Kumlu kıyı, kefal bolluğu'},
+  {n:'Rumeli Feneri',la:41.2254,ln:29.1183,type:'kayalik',fish:['Lüfer','Levrek','Palamut','Torik'],desc:'Karadeniz ağzı, güçlü akıntı'},
+  {n:'Anadolu Feneri',la:41.2186,ln:29.1658,type:'kayalik',fish:['Lüfer','Palamut','Hamsi','Uskumru'],desc:'Boğaz kuzey girişi'},
+  {n:'Şile Kıyısı',la:41.1773,ln:29.6126,type:'kumlu',fish:['Levrek','Hamsi','Pisi','Kalkan'],desc:'Karadeniz kum kıyısı'},
+  {n:'Adalar Çevresi',la:40.8710,ln:29.1236,type:'karisik',fish:['Levrek','Çipura','Kalamar','İzmarit'],desc:'Marmara adaları, karma'},
+  {n:'Tuzla Kıyısı',la:40.8393,ln:29.2950,type:'kumlu',fish:['Levrek','Kefal','İstavrit','Barbun'],desc:'Kum + sazlık kıyı'},
+  {n:'Foça Adaları',la:38.6676,ln:26.7534,type:'kayalik',fish:['Çipura','Levrek','Kolyoz','Karagöz','Orfoz'],desc:'Temiz Ege, kayalık kıyı'},
+  {n:'Çeşme Yarımadası',la:38.3236,ln:26.3064,type:'kayalik',fish:['Çipura','Sinarit','Levrek','Altınbaş'],desc:'Berrak Ege, taşlık-kayalık'},
+  {n:'Urla Kıyısı',la:38.3213,ln:26.7642,type:'karisik',fish:['Levrek','Çipura','Kalamar','Süpya'],desc:'Körfez kıyısı'},
+  {n:'Dikili Kıyısı',la:39.0710,ln:26.8920,type:'kumlu',fish:['Levrek','Kefal','İstavrit','Tekir'],desc:'Kuzey Ege kum kıyısı'},
+  {n:'Bodrum Yarımadası',la:37.0340,ln:27.4301,type:'kayalik',fish:['Çipura','Kalamar','Levrek','Sinarit','Ahtapot'],desc:'Ege-Akdeniz geçişi'},
+  {n:'Marmaris Kıyısı',la:36.8558,ln:28.2769,type:'kayalik',fish:['Çipura','Sinarit','Kalamar','Mercan'],desc:'Körfez içi, kayalık'},
+  {n:'Datça Yarımadası',la:36.7269,ln:27.6872,type:'kayalik',fish:['Sinarit','Çipura','Levrek','Fangri'],desc:'Doğu Ege, açık deniz'},
+  {n:'Antalya Körfezi',la:36.8969,ln:30.7133,type:'karisik',fish:['Çipura','Levrek','Kalamar','Barbun'],desc:'Geniş körfez'},
+  {n:'Kaş Kıyısı',la:36.2002,ln:29.6398,type:'kayalik',fish:['Sinarit','Çipura','Kalamar','Mercan','Orfoz'],desc:'Derin Akdeniz kayalığı'},
+  {n:'Alanya Burnu',la:36.5436,ln:32.0122,type:'kayalik',fish:['Palamut','Kolyoz','Sarıkanat','Çipura'],desc:'Akdeniz burnu'},
+  {n:'Mersin Kıyısı',la:36.8127,ln:34.6415,type:'kumlu',fish:['Levrek','Çipura','Kefal','Dil Balığı'],desc:'Kumlu Akdeniz kıyısı'},
+  {n:'Sinop Burnu',la:42.0234,ln:35.1523,type:'kayalik',fish:['Palamut','Hamsi','Lüfer','Eşkina','Kalkan'],desc:'Karadeniz burnu, akıntılı'},
+  {n:'Samsun Kıyısı',la:41.2867,ln:36.3316,type:'kumlu',fish:['Hamsi','Palamut','İstavrit','Pisi','Kalkan'],desc:'Kıyı kum, ağ ve paraketa'},
+  {n:'Trabzon İskelesi',la:41.0015,ln:39.7178,type:'karisik',fish:['Hamsi','Palamut','İstavrit','Uskumru'],desc:'Doğu Karadeniz limanı'},
+  {n:'Ereğli Burnu',la:41.2747,ln:31.4197,type:'kayalik',fish:['Palamut','Lüfer','Kolyoz','Torik'],desc:'Batı Karadeniz, kayalık'},
+  {n:'Bandırma Körfezi',la:40.3560,ln:27.9780,type:'kumlu',fish:['Levrek','İstavrit','Kefal','Tekir'],desc:'Marmara güney, kumlu kıyı'},
+  {n:'Mudanya İskelesi',la:40.3762,ln:28.8861,type:'kumlu',fish:['Levrek','Kefal','İstavrit','Barbun'],desc:'Bursa kıyısı'},
+  {n:'Erdek Kıyısı',la:40.4016,ln:27.7952,type:'karisik',fish:['Levrek','Çipura','Kalamar','Karagöz'],desc:'Kapıdağ yarımadası'},
+];
+
+function findNearby(lat,lng){
+  const w=document.getElementById('wdsel').value;
+  const t=parseFloat(document.getElementById('wtemp').value)||16;
+  const nbEl=document.getElementById('nearby');
+  const stEl=document.getElementById('locst');
+
+  const scored=ALLSPOTS.map(sp=>{
+    const dist=haversine(lat,lng,sp.la,sp.ln);
+    const rel=FDB.filter(f=>sp.fish.some(fn=>f.nm.includes(fn.split(' ')[0])));
+    const avg=rel.length?Math.round(rel.reduce((s,f)=>s+f.r(w,t,sp.type),0)/rel.length):35;
+    return{...sp,dist,avg};
+  }).sort((a,b)=>a.dist-b.dist).filter(s=>s.dist<=200).slice(0,10);
+
+  if(!scored.length){
+    nbEl.innerHTML='<div style="color:var(--w);font-size:10px">200km çevresinde kayıtlı nokta yok.</div>';
+    return;
+  }
+
+  const already=stEl.innerHTML;
+  stEl.innerHTML=already+`<div style="font-size:9px;color:var(--td)">${scored.length} nokta • ${Math.round(scored[scored.length-1].dist)}km içinde</div>`;
+
+  nbEl.innerHTML=scored.map(sp=>{
+    const d=sp.dist<1?`${Math.round(sp.dist*1000)}m`:sp.dist<10?`${sp.dist.toFixed(1)}km`:`${Math.round(sp.dist)}km`;
+    const tier=sp.avg>=60?'ht':sp.avg>=40?'md':'cl';
+    const col=sp.avg>=60?'var(--a2)':sp.avg>=40?'var(--w)':'var(--a3)';
+    const badges=sp.fish.slice(0,3).map(f=>`<span class="nfb">${f}</span>`).join('');
+    return`<div class="nc ${tier}" onclick="flyAndAnalyze(${sp.la},${sp.ln})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="nn">${sp.n}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:${col};font-weight:700;flex-shrink:0;margin-left:4px">%${sp.avg}</div>
+      </div>
+      <div class="ndst">📏 ${d} • ${sp.type}</div>
+      <div class="ndsc">${sp.desc}</div>
+      <div style="margin-top:3px">${badges}</div>
+    </div>`;
+  }).join('');
+}
+
+function flyAndAnalyze(la,ln){
+  mapO.flyTo([la,ln],13,{duration:1.2});
+  setTimeout(()=>shAnalysis({lat:la,lng:ln}),1400);
+}
+
+// ══════════════════════════════════════════════════════
+// WEATHER
+// ══════════════════════════════════════════════════════
+async function fetchW(){
+  const c=mapO.getCenter();
+  await fetchWForCoord(c.lat,c.lng);
+}
+
+async function fetchWForCoord(lat,lng){
+  document.querySelectorAll('.wi').forEach(e=>e.classList.add('ld'));
+  document.getElementById('wiwv').textContent='...';
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,wave_height&wind_speed_unit=ms`;
+    const d=await(await fetch(url)).json();const c=d.current;
+    const ws=c.wind_speed_10m!=null?parseFloat(c.wind_speed_10m).toFixed(1):'?';
+    const wd=c.wind_direction_10m!=null?deg2nm(c.wind_direction_10m):'?';
+    const tp=c.temperature_2m!=null?parseFloat(c.temperature_2m).toFixed(1):'?';
+    const pr=c.surface_pressure!=null?Math.round(c.surface_pressure):'?';
+    const wv=c.wave_height!=null?parseFloat(c.wave_height).toFixed(1):null;
+    wdata={ws:parseFloat(ws),wd,tp:parseFloat(tp),pr:parseFloat(pr),wv:wv?parseFloat(wv):null};
+    document.getElementById('wiwv').textContent=`${wd} ${ws}m/s`;
+    document.getElementById('witv').textContent=`${tp}°C`;
+    document.getElementById('wipv').textContent=`${pr}hPa`;
+    document.getElementById('wiwav').textContent=wv?`${wv}m`:'—';
+    document.querySelectorAll('.wi').forEach(e=>e.classList.remove('ld'));
+    document.getElementById('wtemp').value=Math.max(4,parseFloat(tp)-2).toFixed(0);
+    setWDS(wd);recalc();
+  }catch(e){
+    document.getElementById('wiwv').textContent='HATA';
+    document.querySelectorAll('.wi').forEach(e=>e.classList.remove('ld'));
+  }
+}
+
+const DMAP={'Yıldız':'yıldız','Poyraz':'poyraz','Gündoğusu':'gündoğusu','Keşişleme':'gündoğusu','Kıble':'kıble','Lodos':'lodos','Karayel':'karayel','İmbat':'batı'};
+function deg2nm(d){
+  if(d>=337.5||d<22.5)return'Yıldız';
+  if(d<67.5)return'Poyraz';
+  if(d<112.5)return'Gündoğusu';
+  if(d<157.5)return'Keşişleme';
+  if(d<202.5)return'Kıble';
+  if(d<247.5)return'Lodos';
+  if(d<292.5)return'Karayel';
+  return'İmbat';
+}
+function setWDS(nm){const s=document.getElementById('wdsel');if(DMAP[nm])s.value=DMAP[nm];}
+
+// ══════════════════════════════════════════════════════
+// FISH DB — 35 Turkish species
+// ══════════════════════════════════════════════════════
+const FDB=[
+  // ── GÖÇER / PELAJİK ──
+  {id:'lufer',nm:'🐟 Lüfer',seas:'EKİM–ARALIK',bw:['poyraz','yıldız'],bt:[12,18],bg:['derin','kayalik'],dep:'10–40m',bait:'Jig, İstavrit, Hamsi',tech:'Trolling, Miskete',gear:'15–20lb mono',
+    r:(w,t,g)=>{let s=0;if(['poyraz','yıldız'].includes(w))s+=30;else if(w==='karayel')s+=12;if(t>=13&&t<=18)s+=35;else if(t>=10)s+=18;else s+=4;if(g==='derin')s+=20;else if(g==='kayalik')s+=14;else if(g==='karisik')s+=7;if(wdata.ws>12)s-=10;return cl(s);},
+    h:(w,t)=>t>=13&&t<=18&&['poyraz','yıldız'].includes(w)?'⭐ İdeal! Göç dönemi.':t<10?'❄️ Su soğuk, sürü dibe çekti':'🌊 Akıntılı noktalarda ara'},
+  {id:'palamut',nm:'🐟 Palamut',seas:'EYL–KAS',bw:['poyraz','yıldız'],bt:[15,22],bg:['derin'],dep:'20–80m',bait:'Uskumru, Jig, Takım',tech:'Trolling, Takım, Miskete',gear:'Mono 30lb, #2/0 iğne',
+    r:(w,t,g)=>{let s=0;if(t>=15&&t<=22)s+=40;else if(t>=12)s+=14;if(['poyraz','yıldız'].includes(w))s+=30;if(g==='derin')s+=14;const mo=new Date().getMonth();if(mo>=8&&mo<=10)s+=15;return cl(s);},
+    h:()=>'🔵 Göç koridorunu takip et, sürü peşinde'},
+  {id:'hamsi',nm:'🐟 Hamsi',seas:'EKİM–ŞUBAT',bw:['poyraz','karayel'],bt:[8,14],bg:['derin','kumlu'],dep:'10–50m',bait:'Paraketa, İnce iğne',tech:'Paraketa, Gırgır',gear:'Paraketa takımı #12–14',
+    r:(w,t,g)=>{let s=0;if(t>=8&&t<=14)s+=45;else if(t>=5)s+=20;if(['poyraz','karayel'].includes(w))s+=25;if(g==='derin')s+=16;const mo=new Date().getMonth();if(mo>=9||mo<=1)s+=12;return cl(s);},
+    h:(w,t)=>t<=14&&['poyraz','karayel'].includes(w)?'⭐ Karadeniz göç dönemi, yoğun sürü':'Su biraz sıcak, hareket azalmış'},
+  {id:'kolyoz',nm:'🐠 Kolyoz',seas:'MAYIS–EYL',bw:['lodos','gündoğusu'],bt:[20,28],bg:['kayalik','karisik'],dep:'5–25m',bait:'Jig, Suni yem, Kaşık',tech:'Spinning, Popping, Trolling',gear:'10–15lb PE, hafif lure',
+    r:(w,t,g)=>{let s=0;if(t>=20&&t<=28)s+=45;else if(t>=18)s+=20;if(['lodos','gündoğusu'].includes(w))s+=18;if(['kayalik','karisik'].includes(g))s+=16;const mo=new Date().getMonth();if(mo>=4&&mo<=8)s+=14;return cl(s);},
+    h:()=>'☀️ Yaz aylarında yüzey popperına saldırgan'},
+  {id:'uskumru',nm:'🐟 Uskumru',seas:'EYL–ARALIK',bw:['poyraz','yıldız','karayel'],bt:[12,20],bg:['derin','karisik'],dep:'5–50m',bait:'Paraketa, Kaşık, Suni yem',tech:'Paraketa, Trolling',gear:'Mono 10lb, paraketa',
+    r:(w,t,g)=>{let s=0;if(t>=12&&t<=20)s+=38;else if(t>=8)s+=18;if(['poyraz','yıldız','karayel'].includes(w))s+=22;if(g==='derin')s+=15;else if(g==='karisik')s+=10;const mo=new Date().getMonth();if(mo>=8&&mo<=11)s+=18;return cl(s);},
+    h:()=>'🍂 Sonbahar göçünde bolca bulunur'},
+  {id:'torik',nm:'🐟 Torik',seas:'EKİM–OCAK',bw:['poyraz','yıldız'],bt:[10,17],bg:['derin'],dep:'30–100m',bait:'İstavrit, Hamsi, Büyük jig',tech:'Dip trolling, Ağır jigging',gear:'50lb+ mono, kalın iğne',
+    r:(w,t,g)=>{let s=0;if(t>=10&&t<=17)s+=38;else if(t>=8)s+=15;if(['poyraz','yıldız'].includes(w))s+=28;if(g==='derin')s+=28;const mo=new Date().getMonth();if(mo>=9&&mo<=0||mo===0)s+=14;return cl(s);},
+    h:()=>'🏋️ İri lüfer. Derin akıntı koridorlarını sever'},
+  {id:'sarikanat',nm:'🐠 Sarıkanat',seas:'MAYIS–EYL',bw:['lodos','gündoğusu','kıble'],bt:[20,28],bg:['derin','kayalik'],dep:'10–60m',bait:'Jig, Kaşık, Suni balık',tech:'Jigging, Trolling',gear:'PE #1.5–2, 30–40lb',
+    r:(w,t,g)=>{let s=0;if(t>=20&&t<=28)s+=40;else if(t>=17)s+=18;if(['lodos','gündoğusu'].includes(w))s+=20;if(g==='derin')s+=20;else if(g==='kayalik')s+=14;const mo=new Date().getMonth();if(mo>=4&&mo<=8)s+=16;return cl(s);},
+    h:()=>'🌞 Sıcak Akdeniz sularında, hızlı yüzücü'},
+
+  // ── DİP BALIĞI / KAYALIK ──
+  {id:'cipura',nm:'🐠 Çipura',seas:'MART–KASIM',bw:['gündoğusu','kıble','batı'],bt:[18,26],bg:['kayalik','sazlik'],dep:'5–30m',bait:'Midye, Karides, Zoka',tech:'Dipten olta, Popping, Feeder',gear:'20–30lb #4–6 iğne',
+    r:(w,t,g)=>{let s=0;if(t>=18&&t<=26)s+=40;else if(t>=15)s+=18;if(g==='kayalik')s+=35;else if(g==='sazlik')s+=22;else if(g==='karisik')s+=10;if(w==='lodos')s-=15;if(wdata.ws>15)s-=18;return cl(s);},
+    h:(w,t)=>t>=18?'🪨 Kayalık + sürükleme kombinasyonu':'❄️ Derine çekildiler'},
+  {id:'levrek',nm:'🐡 Levrek',seas:'TÜM YIL',bw:['poyraz','gündoğusu'],bt:[14,22],bg:['sazlik','kumlu'],dep:'0–15m',bait:'Suni yem, Yem balığı, Solucan',tech:'Spinning, Jigging, Olta',gear:'10–15lb Lure rod, #2–4',
+    r:(w,t,g)=>{let s=0;if(t>=14&&t<=22)s+=35;else if(t>=10)s+=16;if(g==='sazlik')s+=35;else if(g==='kumlu')s+=24;else if(g==='karisik')s+=16;if(['poyraz','gündoğusu'].includes(w))s+=18;return cl(s);},
+    h:()=>'🌿 Alacakaranlık ve sabah saatleri en aktif'},
+  {id:'karagoz',nm:'🐠 Karagöz',seas:'TÜM YIL',bw:['gündoğusu','kıble','batı'],bt:[15,25],bg:['kayalik','sazlik'],dep:'3–25m',bait:'Midye, Kurbağacık, Karides',tech:'Dipten olta, Feeder',gear:'10–15lb #4–6, kısa kamış',
+    r:(w,t,g)=>{let s=0;if(t>=15&&t<=25)s+=38;else if(t>=10)s+=18;if(g==='kayalik')s+=32;else if(g==='sazlik')s+=28;else if(g==='karisik')s+=16;if(['gündoğusu','kıble'].includes(w))s+=14;if(wdata.ws<6)s+=10;return cl(s);},
+    h:()=>'🌿 Sakin, korunaklı koylar ve sazlık kenarları'},
+  {id:'iskarmoz',nm:'🐟 İskarmoz',seas:'TÜM YIL',bw:['herhangi'],bt:[8,24],bg:['kayalik','karisik'],dep:'5–40m',bait:'Midye, Kalamar, Karides',tech:'Dipten olta',gear:'20–30lb #2–4 kanca',
+    r:(w,t,g)=>{let s=20;if(t>=12&&t<=22)s+=18;if(g==='kayalik')s+=28;else if(g==='karisik')s+=16;return cl(s);},
+    h:()=>'🪨 Kayalık dipte sabit bekler, sabır gerekir'},
+  {id:'sinagrit',nm:'🐠 Sinarit',seas:'MART–EKİM',bw:['gündoğusu','kıble','lodos'],bt:[18,27],bg:['kayalik','derin'],dep:'10–60m',bait:'Ahtapot, Kalamar, Büyük Zoka',tech:'Dipten olta, Jigging',gear:'30–50lb #1/0–3/0 kanca',
+    r:(w,t,g)=>{let s=0;if(t>=18&&t<=27)s+=40;else if(t>=15)s+=18;if(g==='kayalik')s+=30;else if(g==='derin')s+=24;if(['gündoğusu','kıble'].includes(w))s+=16;const mo=new Date().getMonth();if(mo>=3&&mo<=9)s+=12;return cl(s);},
+    h:()=>'🔴 Ege ve Akdeniz kayalıklarında, iri avdır'},
+  {id:'fangri',nm:'🐟 Fangri',seas:'MART–KASIM',bw:['kıble','gündoğusu'],bt:[17,26],bg:['kayalik','derin'],dep:'10–50m',bait:'Karides, Midye, Mürekkepbalığı',tech:'Dipten olta, Drop-shot',gear:'15–20lb #2–4 kanca',
+    r:(w,t,g)=>{let s=0;if(t>=17&&t<=26)s+=36;else if(t>=13)s+=16;if(g==='kayalik')s+=28;else if(g==='derin')s+=20;if(['kıble','gündoğusu'].includes(w))s+=14;return cl(s);},
+    h:()=>'🎯 Çipura ile aynı noktada bulunur'},
+  {id:'mercan',nm:'🐟 Mercan',seas:'TÜM YIL',bw:['lodos','kıble','gündoğusu'],bt:[16,26],bg:['kayalik','derin'],dep:'15–80m',bait:'Karides, Kalamar, Solucan',tech:'Dipten olta, Tam dip',gear:'30lb+ #1–2/0 kanca',
+    r:(w,t,g)=>{let s=0;if(t>=16&&t<=26)s+=34;else if(t>=12)s+=16;if(g==='kayalik')s+=28;else if(g==='derin')s+=24;const mo=new Date().getMonth();if(mo>=2&&mo<=9)s+=10;return cl(s);},
+    h:()=>'🌊 Derin kayalık dipler, sabırlı avcılık'},
+  {id:'orfoz',nm:'🐟 Orfoz',seas:'TÜM YIL',bw:['herhangi'],bt:[14,24],bg:['kayalik'],dep:'5–40m',bait:'Canlı yem, Ahtapot, İstavrit',tech:'Canlı yemle dip, Jigging',gear:'50lb+ örgü ip, #3/0–5/0',
+    r:(w,t,g)=>{let s=0;if(t>=14&&t<=24)s+=30;else if(t>=10)s+=14;if(g==='kayalik')s+=42;else if(g==='karisik')s+=10;if(wdata.ws<8)s+=10;return cl(s);},
+    h:()=>'🏔️ Derin mağara ve yarıkları sever, gizlenme ustası'},
+  {id:'lipsoz',nm:'🐠 Lipsoz',seas:'MART–EKİM',bw:['gündoğusu','kıble'],bt:[16,25],bg:['sazlik','kumlu','karisik'],dep:'1–10m',bait:'Kurtçuk, Ekmek, Solucan',tech:'Sığ olta, Feeder',gear:'6–10lb ince kamış, #8–12',
+    r:(w,t,g)=>{let s=0;if(t>=16&&t<=25)s+=32;else if(t>=12)s+=14;if(g==='sazlik')s+=32;else if(g==='kumlu')s+=20;if(['gündoğusu','kıble'].includes(w))s+=12;if(wdata.ws<5)s+=14;return cl(s);},
+    h:()=>'🌱 Sazlık ve kumlu sığ sular, çocuk balığı da denir'},
+  {id:'esgina',nm:'🐟 Eşkina',seas:'EKİM–MART',bw:['poyraz','yıldız','karayel'],bt:[8,16],bg:['kayalik','derin'],dep:'15–60m',bait:'Kalamar, Balık parçası, Jig',tech:'Dipten jigging, Ağır olta',gear:'30–40lb PE, #2/0–4/0',
+    r:(w,t,g)=>{let s=0;if(t>=8&&t<=16)s+=40;else if(t>=6)s+=20;if(g==='kayalik')s+=28;else if(g==='derin')s+=24;if(['poyraz','yıldız'].includes(w))s+=20;const mo=new Date().getMonth();if(mo>=9||mo<=2)s+=16;return cl(s);},
+    h:(w,t)=>t<=14?'🥶 Kış balığıdır, soğukta en verimli sezon':'Su sıcak, derin ara'},
+  {id:'kirlangiç',nm:'🐠 Kırlangıç',seas:'MAYIS–EYL',bw:['lodos','kıble','gündoğusu'],bt:[20,28],bg:['kumlu','karisik'],dep:'3–20m',bait:'Karides, Küçük balık',tech:'Sığ dipten, Feeder',gear:'10–15lb #4–6',
+    r:(w,t,g)=>{let s=0;if(t>=20&&t<=28)s+=35;else if(t>=16)s+=16;if(g==='kumlu')s+=28;else if(g==='karisik')s+=18;if(['lodos','kıble'].includes(w))s+=14;const mo=new Date().getMonth();if(mo>=4&&mo<=8)s+=14;return cl(s);},
+    h:()=>'🕊️ Yaz aylarında kumlu dipte, uçar gibi yüzer'},
+
+  // ── KEFAL / SAZLIK ──
+  {id:'kefal',nm:'🐟 Kefal',seas:'TÜM YIL',bw:['herhangi'],bt:[10,28],bg:['sazlik','kumlu','karisik'],dep:'0–5m',bait:'Ekmek, Hamur, Kurtçuk, Yosun',tech:'Yüzey oltası, Feeder, El olta',gear:'6–10lb ince kamış, #10–14',
+    r:(w,t,g)=>{let s=25;if(t>=12&&t<=26)s+=20;if(g==='sazlik')s+=30;else if(g==='kumlu')s+=18;else if(g==='karisik')s+=14;if(wdata.ws<8)s+=10;return cl(s);},
+    h:()=>'🍞 Ekmek kırıntısı ve hamur en iyi yem'},
+  {id:'tekir',nm:'🐟 Tekir',seas:'MART–EKİM',bw:['gündoğusu','kıble','lodos'],bt:[16,26],bg:['kumlu','karisik'],dep:'3–30m',bait:'Karides, Solucan, Midye',tech:'Dipten olta, Feeder',gear:'10–15lb #6–8 kanca',
+    r:(w,t,g)=>{let s=0;if(t>=16&&t<=26)s+=34;else if(t>=12)s+=16;if(g==='kumlu')s+=30;else if(g==='karisik')s+=18;if(['gündoğusu','kıble'].includes(w))s+=14;const mo=new Date().getMonth();if(mo>=2&&mo<=9)s+=12;return cl(s);},
+    h:()=>'🦐 Kumlu dipte karides ve solucanı çabuk bulur'},
+  {id:'dilbaligi',nm:'🐟 Dil Balığı',seas:'MART–EKİM',bw:['herhangi'],bt:[14,24],bg:['kumlu'],dep:'5–40m',bait:'Solucan, Küçük karides',tech:'Dipten, Gece oltası',gear:'10–20lb ince misina, #8–10',
+    r:(w,t,g)=>{let s=0;if(t>=14&&t<=24)s+=32;else if(t>=10)s+=14;if(g==='kumlu')s+=40;else if(g==='karisik')s+=12;const mo=new Date().getMonth();if(mo>=2&&mo<=9)s+=14;return cl(s);},
+    h:()=>'🌙 Gece ve sabah erken saatlerde kumlu dipte'},
+
+  // ── KALAMAR / MÜREKKEP ──
+  {id:'kalamar',nm:'🦑 Kalamar',seas:'EKİM–ŞUBAT',bw:['lodos','kıble'],bt:[12,19],bg:['derin','kumlu'],dep:'15–60m',bait:'Eging jig, Küçük balık',tech:'Eging (gece), Jig, Tüyo',gear:'PE #0.6–0.8, eging rod',
+    r:(w,t,g)=>{let s=0;if(t>=12&&t<=19)s+=40;else if(t>=10)s+=18;if(g==='derin')s+=30;else if(g==='kumlu')s+=14;if(['lodos','kıble'].includes(w))s+=14;if(wdata.ws>10)s-=15;return cl(s);},
+    h:()=>'🌙 Fenerli gece avı en verimli yöntem'},
+  {id:'ahtapot',nm:'🐙 Ahtapot',seas:'MART–EKİM',bw:['herhangi'],bt:[14,25],bg:['kayalik','karisik'],dep:'2–25m',bait:'Yengeç, Balık parçası, Zoka',tech:'Dipten, Kuytu arama',gear:'30lb mono, #2/0–4/0 çengel',
+    r:(w,t,g)=>{let s=0;if(t>=14&&t<=25)s+=32;else if(t>=10)s+=12;if(g==='kayalik')s+=35;else if(g==='karisik')s+=18;const mo=new Date().getMonth();if(mo>=3&&mo<=9)s+=14;return cl(s);},
+    h:()=>'🪨 Taş ve mağara arası, düşük akıntı tercih eder'},
+  {id:'supya',nm:'🦑 Süpya',seas:'NİS–EYL',bw:['kıble','gündoğusu','lodos'],bt:[17,26],bg:['kumlu','karisik'],dep:'5–30m',bait:'Eging, Küçük balık, Karides',tech:'Yavaş eging, Dipten',gear:'PE #0.4–0.6, ince eging',
+    r:(w,t,g)=>{let s=0;if(t>=17&&t<=26)s+=38;else if(t>=14)s+=16;if(g==='kumlu')s+=28;else if(g==='karisik')s+=20;if(['kıble','gündoğusu'].includes(w))s+=14;const mo=new Date().getMonth();if(mo>=3&&mo<=8)s+=14;return cl(s);},
+    h:()=>'🦑 Kalamardan daha sığ, yavaş jig hareketi'},
+
+  // ── SAZAN / TATLI SU ──
+  {id:'sazan',nm:'🐠 Sazan',seas:'NİS–EKİM',bw:['herhangi'],bt:[16,26],bg:['sazlik','kumlu'],dep:'0–5m',bait:'Mısır, Ekmek, Boiley, Kurtçuk',tech:'Feeder, Kap olta, Spod',gear:'Feeder kamış, 10–15lb mono, #6–10',
+    r:(w,t,g)=>{let s=0;if(t>=16&&t<=26)s+=38;else if(t>=12)s+=16;if(g==='sazlik')s+=35;else if(g==='kumlu')s+=18;if(wdata.ws<5)s+=14;const mo=new Date().getMonth();if(mo>=3&&mo<=9)s+=14;return cl(s);},
+    h:()=>'🌿 Durgun sazlık, şafak ve akşam üstü aktif'},
+  {id:'yayinbaligi',nm:'🐟 Yayın Balığı',seas:'NİS–EYL',bw:['herhangi'],bt:[18,28],bg:['sazlik','kumlu'],dep:'0–8m',bait:'Kurbağa, Büyük Solucan, Canlı yem',tech:'Canlı yemle, Yüzey popper, Jigging',gear:'50lb+ örgü, #4/0–8/0 kanca',
+    r:(w,t,g)=>{let s=0;if(t>=18&&t<=28)s+=40;else if(t>=14)s+=16;if(g==='sazlik')s+=38;else if(g==='kumlu')s+=14;const mo=new Date().getMonth();if(mo>=3&&mo<=8)s+=16;if(wdata.ws<5)s+=8;return cl(s);},
+    h:()=>'🌩️ Fırtına öncesi ve gece yarısı en aktif dönem'},
+
+  // ── TÜRK DENİZİ SPESİFİK ──
+  {id:'istavrit',nm:'🐟 İstavrit',seas:'TÜM YIL',bw:['herhangi'],bt:[8,26],bg:['kumlu','karisik'],dep:'5–50m',bait:'Jig, Paraketa, Küçük kaşık',tech:'Her teknik, Paraketa',gear:'Paraketa takımı #12–14',
+    r:(w,t,g)=>{let s=30;if(t>=10&&t<=25)s+=16;if(['kumlu','karisik'].includes(g))s+=12;return cl(s);},
+    h:()=>'📌 Akıntılı noktalarda yoğunlaşır'},
+  {id:'zargana',nm:'🐟 Zargana',seas:'NİS–EYL',bw:['lodos','gündoğusu','kıble'],bt:[18,26],bg:['karisik','kumlu'],dep:'0–5m',bait:'Hamsi, Küçük balık, Parlak yem',tech:'Yüzey oltası, Popping, Misky',gear:'5–8lb ince misina, küçük iğne',
+    r:(w,t,g)=>{let s=0;if(t>=18&&t<=26)s+=36;else if(t>=15)s+=16;if(g==='karisik')s+=22;else if(g==='kumlu')s+=18;if(['lodos','gündoğusu'].includes(w))s+=16;const mo=new Date().getMonth();if(mo>=3&&mo<=8)s+=14;return cl(s);},
+    h:()=>'💨 Yüzeyde sürü halinde, ince misina şart'},
+  {id:'isgara',nm:'🐟 Izgara (Çizgili Balık)',seas:'MAYIS–EYL',bw:['gündoğusu','kıble'],bt:[19,27],bg:['kayalik','karisik'],dep:'3–20m',bait:'Karides, Küçük suni yem',tech:'Kısa olta, Spinning',gear:'8–12lb misina, #6–8',
+    r:(w,t,g)=>{let s=0;if(t>=19&&t<=27)s+=32;else if(t>=15)s+=14;if(g==='kayalik')s+=26;else if(g==='karisik')s+=16;const mo=new Date().getMonth();if(mo>=4&&mo<=8)s+=16;return cl(s);},
+    h:()=>'🌞 Sıcak yaz aylarında kayalık kıyılarda sürü halinde'},
+  {id:'barbun',nm:'🐟 Barbun',seas:'NİS–EKİM',bw:['kıble','gündoğusu','lodos'],bt:[16,25],bg:['kumlu','karisik'],dep:'5–40m',bait:'Karides, Solucan, Küçük kalamar',tech:'Dipten olta, Gece oltası',gear:'10–15lb #6–8, uzun olta',
+    r:(w,t,g)=>{let s=0;if(t>=16&&t<=25)s+=35;else if(t>=12)s+=15;if(g==='kumlu')s+=32;else if(g==='karisik')s+=18;if(['kıble','gündoğusu'].includes(w))s+=14;const mo=new Date().getMonth();if(mo>=3&&mo<=9)s+=12;return cl(s);},
+    h:()=>'🦐 Kumlu dipte karides ve solucanı çabuk bulur, lezzetlidir'},
+  {id:'iskorpit',nm:'🐟 İskorpit',seas:'TÜM YIL',bw:['herhangi'],bt:[12,24],bg:['kayalik'],dep:'5–30m',bait:'Balık parçası, Mürekkepbalığı, Kalamar',tech:'Tam dip oltası, Geceleri',gear:'20–30lb, kısa kalın misina, #1/0–2/0',
+    r:(w,t,g)=>{let s=0;if(t>=12&&t<=24)s+=28;else if(t>=8)s+=14;if(g==='kayalik')s+=42;else if(g==='karisik')s+=12;if(wdata.ws<6)s+=10;return cl(s);},
+    h:()=>'⚠️ Dikkat: Zehirli diken! Dipte sabit bekler, keskin görüntü'},
+  {id:'pisi',nm:'🐟 Pisi Balığı',seas:'EYL–MART',bw:['poyraz','karayel','yıldız'],bt:[8,16],bg:['kumlu'],dep:'10–60m',bait:'Solucan, Karides, Midye',tech:'Dipten olta, Feeder dip',gear:'15–20lb misina, uzun iğne seti',
+    r:(w,t,g)=>{let s=0;if(t>=8&&t<=16)s+=38;else if(t>=5)s+=18;if(g==='kumlu')s+=40;else if(g==='karisik')s+=14;if(['poyraz','karayel'].includes(w))s+=16;const mo=new Date().getMonth();if(mo>=8||mo<=2)s+=14;return cl(s);},
+    h:()=>'❄️ Kış ve sonbahar balığı, kumlu dip uzmanı'},
+  {id:'kalkan',nm:'🐟 Kalkan',seas:'EYL–MART',bw:['poyraz','yıldız','karayel'],bt:[6,14],bg:['kumlu','karisik'],dep:'20–80m',bait:'Büyük solucan, Midye, Hamsi',tech:'Dip olta, Paternoster',gear:'30lb+ misina, #2/0–4/0',
+    r:(w,t,g)=>{let s=0;if(t>=6&&t<=14)s+=40;else if(t>=4)s+=18;if(g==='kumlu')s+=30;else if(g==='karisik')s+=18;if(['poyraz','yıldız'].includes(w))s+=20;const mo=new Date().getMonth();if(mo>=8||mo<=2)s+=18;return cl(s);},
+    h:()=>'❄️ Karadeniz kış balığı, soğuk derin sularda'},
+  {id:'izmarit',nm:'🐠 İzmarit',seas:'TÜM YIL',bw:['herhangi'],bt:[12,26],bg:['kayalik','karisik'],dep:'3–25m',bait:'Ekmek, Kurtçuk, Küçük karides',tech:'Kıyı oltası, Yüzey-dip arası',gear:'5–8lb ince misina, #10–14 küçük iğne',
+    r:(w,t,g)=>{let s=22;if(t>=14&&t<=24)s+=16;if(g==='kayalik')s+=22;else if(g==='karisik')s+=14;return cl(s);},
+    h:()=>'🐠 Bolca bulunur, çocukların ilk balığı. Her yerde'},
+  {id:'altinbas',nm:'🐠 Altınbaş (Salpa)',seas:'MAYIS–EYL',bw:['gündoğusu','kıble','lodos'],bt:[18,28],bg:['kayalik','sazlik'],dep:'1–10m',bait:'Yosun, Ekmek, Kurtçuk',tech:'Yüzey olta, Feeder',gear:'6–10lb #10–12 ince kanca',
+    r:(w,t,g)=>{let s=0;if(t>=18&&t<=28)s+=34;else if(t>=14)s+=14;if(g==='kayalik')s+=24;else if(g==='sazlik')s+=20;if(['gündoğusu','kıble'].includes(w))s+=14;const mo=new Date().getMonth();if(mo>=4&&mo<=8)s+=14;return cl(s);},
+    h:()=>'🌿 Yosunlu kayalık kıyılar, otçul balık'}
+];
+const SPOTS={
+  kayalik:[
+    {n:'Nara Burnu',d:'Akıntılı kayalık — Çipura, Eşkina, Lüfer, Orfoz'},
+    {n:'Kilitbahir Kayalıkları',d:'Derin kayalık — İskorpit, Mercan, Sinarit'},
+    {n:'Foça Adaları',d:'Temiz Ege — Çipura, Karagöz, İzmarit, Orfoz'},
+    {n:'Bozcaada Kıyısı',d:'Açık deniz kayalık — Sinarit, Lüfer, Kalamar'}
+  ],
+  kumlu:[
+    {n:'Keşan Kıyısı',d:'Düz kumlu — Dil Balığı, Pisi, Tekir, Barbun'},
+    {n:'Gelibolu İskelesi',d:'Kumlu-sazlık — İstavrit, Kefal, Zargana'},
+    {n:'Karataş Plajı',d:'Sabah saatleri — Levrek, Tekir, Dil Balığı'},
+    {n:'Samsun Kıyısı',d:'Geniş kumlu — Hamsi, Pisi, Kalkan, İstavrit'}
+  ],
+  sazlik:[
+    {n:'Kavak Koyu',d:'Sazlık kenarı — Levrek, Kefal, Sazan, Lipsoz'},
+    {n:'Bolayır Koyu',d:'Çayır sazlığı — Kefal, Sazan, Karagöz'},
+    {n:'Enez Deltası',d:'Meriç ağzı — Levrek, Kefal, Yayın, Sazan'}
+  ],
+  derin:[
+    {n:'Çanakkale Boğazı',d:'Akıntı hattı — Lüfer, Palamut, Torik, Eşkina'},
+    {n:'Bozcaada Doğusu',d:'40m+ — Kalamar, Lüfer, Mercan, Süpya'},
+    {n:'Gelibolu Açıkları',d:'Tekne avı — Palamut, Torik, Sarıkanat, Uskumru'}
+  ],
+  karisik:[
+    {n:'Kepez Limanı Çıkışı',d:'Karma zemin — Çipura, Karagöz, Tekir, Barbun'},
+    {n:'Kilya Koyu',d:'Zengin ekosistem — Levrek, Kefal, İzmarit, Kırlangıç'},
+    {n:'Eceabat Açıkları',d:'Her tür — Kalamar, Uskumru, Kolyoz, Zargana'}
+  ]
+};
+
+function cl(v){return Math.min(Math.max(Math.round(v),0),95);}
+
+function recalc(){
+  const w=document.getElementById('wdsel').value;
+  const t=parseFloat(document.getElementById('wtemp').value)||16;
+  const g=document.getElementById('gtype').value;
+  const res=FDB.map(f=>({...f,prob:f.r(w,t,g),tip:f.h(w,t)})).sort((a,b)=>b.prob-a.prob);
+  const con=document.getElementById('fpreds');
+  con.innerHTML='';
+  res.forEach(f=>{
+    const cls=f.prob>=65?'ph':f.prob>=40?'pm':'pl';
+    const col=f.prob>=65?'var(--a2)':f.prob>=40?'var(--w)':'var(--a3)';
+    con.innerHTML+=`<div class="fc" onclick="this.classList.toggle('ex')">
+      <div class="fh"><div class="fn">${f.nm}</div><div class="fs">${f.seas}</div></div>
+      <div class="pbw"><div class="pb ${cls}" style="width:${f.prob}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:9px">
+        <span style="color:var(--td)">${f.tip||''}</span>
+        <span style="font-weight:700;color:${col}">%${f.prob}</span>
+      </div>
+      <div class="fd">
+        <div class="dg">
+          <div class="di"><div class="dl">Derinlik</div><div class="dv">${f.dep}</div></div>
+          <div class="di"><div class="dl">Yem</div><div class="dv">${f.bait}</div></div>
+          <div class="di"><div class="dl">Teknik</div><div class="dv">${f.tech}</div></div>
+          <div class="di"><div class="dl">Takım</div><div class="dv">${f.gear}</div></div>
+        </div>
+        <ul class="tl">
+          <li>İdeal su: ${f.bt[0]}–${f.bt[1]}°C</li>
+          <li>İdeal rüzgar: ${f.bw.join(', ')}</li>
+          <li>Zemin: ${f.bg.join(', ')}</li>
+        </ul>
+      </div>
+    </div>`;
+  });
+  const sp=document.getElementById('sprecs');
+  sp.innerHTML='';
+  (SPOTS[g]||[]).forEach(s=>{
+    sp.innerHTML+=`<div class="sc"><div class="sn">📍 ${s.n}</div><div class="sd">${s.d}</div></div>`;
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// ANALYSIS POPUP (map click)
+// ══════════════════════════════════════════════════════
+async function shAnalysis(ll){
+  const w=document.getElementById('wdsel').value;
+  const t=parseFloat(document.getElementById('wtemp').value)||16;
+  const g=document.getElementById('gtype').value;
+  const res=FDB.map(f=>({nm:f.nm,prob:f.r(w,t,g)})).sort((a,b)=>b.prob-a.prob);
+  let place='';
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${ll.lat}&lon=${ll.lng}&format=json&accept-language=tr`);
+    const j=await r.json();const a=j.address||{};
+    place=[a.county||a.city||a.town||a.village||a.state_district||'',a.state||''].filter(Boolean).join(', ');
+  }catch(e){}
+  let bars='';
+  res.slice(0,6).forEach(f=>{
+    const cls=f.prob>=65?'ph':f.prob>=40?'pm':'pl';
+    const col=f.prob>=65?'var(--a2)':f.prob>=40?'var(--w)':'var(--a3)';
+    bars+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+      <div style="font-size:11px;color:var(--tb);width:82px;flex-shrink:0">${f.nm}</div>
+      <div style="flex:1;background:rgba(0,0,0,.5);border-radius:2px;height:6px;overflow:hidden"><div class="apb ${cls}" style="width:${f.prob}%"></div></div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;width:28px;text-align:right;color:${col}">%${f.prob}</div>
+    </div>`;
+  });
+  L.popup({maxWidth:320}).setLatLng(ll).setContent(`<div class="ap">
+    <div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;color:var(--a);margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--b)">📍 NOKTA ANALİZİ</div>
+    ${place?`<div style="font-size:11px;color:var(--a2);margin-bottom:3px">🏙 ${place}</div>`:''}
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--td);margin-bottom:7px">${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}</div>
+    <div style="font-size:8px;color:var(--td);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">BALIK ŞANSI</div>
+    ${bars}
+    <div style="margin-top:7px;display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px">
+      <div><div style="font-size:8px;color:var(--td)">RÜZGAR</div><div style="color:var(--a)">${wdata.wd||'—'} ${wdata.ws||'—'}m/s</div></div>
+      <div><div style="font-size:8px;color:var(--td)">SU SIC.</div><div style="color:var(--a)">${t}°C</div></div>
+      <div><div style="font-size:8px;color:var(--td)">ZEMİN</div><div style="color:var(--t)">${g}</div></div>
+      <div><div style="font-size:8px;color:var(--td)">BASINÇ</div><div style="color:var(--a)">${wdata.pr||'—'}hPa</div></div>
+    </div>
+    <div style="background:rgba(0,255,157,.08);border:1px solid rgba(0,255,157,.2);border-radius:3px;padding:5px 8px;margin-top:7px;font-size:11px;color:var(--a2)">⭐ En İyi: ${res[0].nm} — %${res[0].prob}</div>
+    <button onclick="setNFP(${ll.lat},${ll.lng})" style="width:100%;margin-top:7px;background:rgba(0,255,157,.08);border:1px solid var(--a2);color:var(--a2);padding:5px;border-radius:3px;cursor:pointer;font-size:8px;font-family:'Orbitron',monospace;letter-spacing:1px">📍 NOT BIRAK</button>
+  </div>`).openOn(mapO);
+}
+
+function setNFP(la,ln){mapO.closePopup();if(!CU){openAuth();return;}pendC={lat:la,lng:ln};shNM({lat:la,lng:ln});}
+
+// ══════════════════════════════════════════════════════
+// NOTES
+// ══════════════════════════════════════════════════════
+function renderNotes(){nmMks.forEach(m=>mapO.removeLayer(m));nmMks=[];notes.forEach(n=>addNM(n));}
+
+function addNM(note){
+  const em=note.st==='good'?'🟢':note.st==='bad'?'🔴':'🔵';
+  const ic=L.divIcon({className:'',html:`<div class="cmk">${em}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+  const m=L.marker([note.lat,note.lng],{icon:ic}).addTo(mapO);
+  m.bindPopup(`<div style="min-width:180px">
+    <div style="color:#00ff9d;font-weight:700;margin-bottom:4px">🎣 ${note.cap}</div>
+    <div style="margin-bottom:4px">${note.txt}</div>
+    <div style="color:#4a7a9b;font-size:9px;font-family:'Share Tech Mono',monospace">${note.lat.toFixed(4)},${note.lng.toFixed(4)}<br>${new Date(note.time).toLocaleString('tr-TR')}</div>
+  </div>`);
+  nmMks.push(m);
+}
+
+function renderLog(){
+  const el=document.getElementById('loglist');
+  const s=[...notes].sort((a,b)=>b.time-a.time).slice(0,60);
+  if(!s.length){el.innerHTML='<div style="color:var(--td);font-size:10px;padding:12px;text-align:center">Henüz not yok.<br>Haritaya tıkla, ilk sen bırak! 🎣</div>';return;}
+  el.innerHTML=s.map(n=>{
+    const b=n.st==='good'?'<span class="lb lg">BALIK VAR</span>':n.st==='bad'?'<span class="lb lbr">YOK</span>':'<span class="lb li">BİLGİ</span>';
+    return`<div class="le" onclick="mapO.setView([${n.lat},${n.lng}],14)">
+      <div class="lm"><span class="lc">🎣 ${n.cap}</span><span class="lt">${tago(n.time)}</span></div>
+      <div>${b}${n.txt}</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--td);margin-top:2px">${n.lat.toFixed(4)},${n.lng.toFixed(4)}</div>
+    </div>`;
+  }).join('');
+}
+
+function tago(ts){const m=Math.floor((Date.now()-ts)/60000);if(m<1)return'şimdi';if(m<60)return m+'dk';const h=Math.floor(m/60);if(h<24)return h+'sa';return Math.floor(h/24)+'g';}
+
+function togNM(){if(!CU){openAuth();return;}nmMode=!nmMode;document.getElementById('nmbanner').style.display=nmMode?'block':'none';mapO.getContainer().style.cursor=nmMode?'crosshair':'';}
+
+function clearMN(){if(!CU){openAuth();return;}const mn=notes.filter(n=>n.cap===CU.nm);if(!mn.length){alert('Notunuz yok.');return;}if(!confirm(`${mn.length} notunuz silinsin mi?`))return;notes=notes.filter(n=>n.cap!==CU.nm);ls(K1,notes);renderNotes();renderLog();}
+
+// ══════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════
+function openAuth(){
+  if(CU)shUMenu();
+  else goPg('auth-pg',null);
+}
+
+function swAuth(t){
+  document.getElementById('atl').classList.toggle('on',t==='login');
+  document.getElementById('atr').classList.toggle('on',t==='reg');
+  document.getElementById('afl').style.display=t==='login'?'block':'none';
+  document.getElementById('afr').style.display=t==='reg'?'block':'none';
+}
+
+function doLogin(){
+  const u=document.getElementById('liu').value.trim();
+  const p=document.getElementById('lip').value;
+  const err=document.getElementById('lerr');
+  const f=users.find(x=>x.un===u&&x.pw===p);
+  if(!f){err.textContent='Kullanıcı adı veya şifre hatalı.';err.classList.add('on');return;}
+  if(f.banned){err.textContent='Bu hesap yasaklandı.';err.classList.add('on');return;}
+  err.classList.remove('on');
+  loginUser(f);
+}
+
+function doReg(){
+  const nm=document.getElementById('rnm').value.trim();
+  const u=document.getElementById('ruu').value.trim();
+  const p=document.getElementById('rup').value;
+  const rg=document.getElementById('rrg').value.trim();
+  const err=document.getElementById('rerr');
+  if(!nm||!u||!p){err.textContent='Tüm alanları doldurun.';err.classList.add('on');return;}
+  if(p.length<6){err.textContent='Şifre en az 6 karakter.';err.classList.add('on');return;}
+  if(users.find(x=>x.un===u)){err.textContent='Bu kullanıcı adı alınmış.';err.classList.add('on');return;}
+  err.classList.remove('on');
+  const nu={un:u,pw:p,nm,role:'user',region:rg||'Belirtilmedi',banned:false,joined:Date.now()};
+  users.push(nu);ls(K2,users);
+  loginUser(nu);
+}
+
+function loginUser(u){
+  CU=u;ls(K3,u.un);
+  document.getElementById('captname').textContent=u.nm;
+  // Show admin button if admin
+  if(u.role==='admin'){
+    document.getElementById('admBtn').style.display='';
+    document.getElementById('admBtn').style.removeProperty('display');
+    document.getElementById('admBtn').style.display='inline-block';
+  }
+  addCSys(`${u.nm} Kamışını aldı geldi  ⚓`);
+  goPg('map-pg',document.querySelector('.ntab'));
+}
+
+function logout(){
+  CU=null;ls(K3,null);
+  document.getElementById('captname').textContent='GİRİŞ YAP';
+  document.getElementById('admBtn').style.display='none';
+  hidM();
+  goPg('map-pg',document.querySelector('.ntab'));
+}
+
+function shUMenu(){
+  const nc=notes.filter(n=>n.cap===CU.nm).length;
+  showM(`<h2>👤 HESABIM</h2>
+    <div style="background:var(--panel);border:1px solid var(--b);border-radius:4px;padding:11px;margin-bottom:10px">
+      <div style="font-size:17px;font-weight:700;color:var(--tb);margin-bottom:3px">${CU.nm}</div>
+      <div style="font-size:9px;color:var(--td);font-family:'Share Tech Mono',monospace">@${CU.un}</div>
+      <div style="margin-top:5px;font-size:10px;color:var(--td)">📍 ${CU.region} &nbsp;|&nbsp; Katılım: ${new Date(CU.joined).toLocaleDateString('tr-TR')}</div>
+      <div style="font-size:10px;color:var(--td);margin-top:2px">Notlarım: ${nc}</div>
+    </div>
+    <div class="mact"><button class="cncl" onclick="hidM()">KAPAT</button><button class="btn r" onclick="logout()" style="flex:1">🚪 ÇIKIŞ</button></div>`);
+}
+
+function reqLog(pg,btn){if(!CU){openAuth();return;}goPg(pg,btn);}
+
+// ══════════════════════════════════════════════════════
+// NOTE MODAL
+// ══════════════════════════════════════════════════════
+function shNM(ll){
+  if(!CU){openAuth();return;}
+  pendC=ll;
+  showM(`<h2>📍 NOT BIRAK</h2>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--td);margin-bottom:9px">${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div class="il">Durum</div>
+      <select class="rs" id="nst"><option value="good">🟢 Balık Var!</option><option value="bad">🔴 Balık Yok</option><option value="info">🔵 Bilgi/Gözlem</option></select>
+      <div class="il" style="margin-top:4px">Notunuz</div>
+      <textarea class="ri" id="ntxt" placeholder="Lüfer görüldü, deniz bulanık, akıntı kuvvetli..."></textarea>
+    </div>
+    <div class="mact">
+      <button class="cncl" onclick="hidM();nmMode=false;document.getElementById('nmbanner').style.display='none';mapO.getContainer().style.cursor=''">İPTAL</button>
+      <button class="btn g" onclick="saveNote()" style="flex:1">💾 KAYDET</button>
+    </div>`);
+}
+
+function saveNote(){
+  const txt=document.getElementById('ntxt').value.trim();
+  const st=document.getElementById('nst').value;
+  if(!txt){alert('Not yazın.');return;}
+  const n={id:Date.now(),lat:pendC.lat,lng:pendC.lng,txt,st,cap:CU.nm,time:Date.now()};
+  notes.push(n);ls(K1,notes);
+  addNM(n);renderLog();hidM();
+  nmMode=false;document.getElementById('nmbanner').style.display='none';mapO.getContainer().style.cursor='';
+  mapO.setView([n.lat,n.lng],Math.max(mapO.getZoom(),13));
+}
+
+// ══════════════════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════════════════
+function loadChat(){chat=lg(K4)||[];renderChat();}
+
+function renderChat(){
+  const c=document.getElementById('chmsg');
+  const isAdmin=CU&&CU.role==='admin';
+  c.innerHTML=chat.map(m=>{
+    if(m.sys)return`<div class="csys">${m.txt}</div>`;
+    const mine=CU&&m.snd===CU.nm;
+    const delBtn=isAdmin&&!m.sys
+      ?`<button onclick="admDelChat(${m.id})" title="Mesajı sil" style="background:none;border:none;cursor:pointer;color:var(--r);font-size:12px;padding:0 2px;opacity:.6;flex-shrink:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6">🗑️</button>`
+      :'';
+    return`<div class="cm ${mine?'me':''}" style="align-items:center;gap:5px">
+      <div class="cav">${m.snd.charAt(0)}</div>
+      <div class="cb" style="flex:1">${!mine?`<div class="csd">${m.snd}</div>`:''}<div class="ct">${esc(m.txt)}</div><div class="ctm">${tago(m.time)}</div></div>
+      ${delBtn}
+    </div>`;
+  }).join('');
+  c.scrollTop=c.scrollHeight;
+}
+
+function sendChat(){
+  if(!CU){openAuth();return;}
+  const inp=document.getElementById('chinp'),txt=inp.value.trim();
+  if(!txt)return;
+  chat.push({id:Date.now(),snd:CU.nm,txt,time:Date.now()});
+  if(chat.length>200)chat=chat.slice(-200);
+  ls(K4,chat);inp.value='';renderChat();
+}
+
+function addCSys(txt){chat.push({sys:true,txt,time:Date.now()});ls(K4,chat);renderChat();}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ══════════════════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════════════════
+function renderAdmin(){
+  if(!CU||CU.role!=='admin')return;
+
+  // ── İstatistikler ──────────────────────────────────────────────────────
+  document.getElementById('admst').innerHTML=`
+    <div class="stc"><div class="stn">${users.length}</div><div class="stl2">Kullanıcı</div></div>
+    <div class="stc"><div class="stn">${notes.length}</div><div class="stl2">Notlar</div></div>
+    <div class="stc"><div class="stn">${chat.filter(m=>!m.sys).length}</div><div class="stl2">Mesaj</div></div>
+    <div class="stc"><div class="stn">${users.filter(u=>u.banned).length}</div><div class="stl2">Yasaklı</div></div>`;
+
+  // ── Kullanıcı listesi — kendi hesabı hariç herkesi göster ──────────────
+  const otherUsers = users.filter(u => u.un !== CU.un);
+  document.getElementById('admu').innerHTML = otherUsers.length
+    ? otherUsers.map(u=>`<div class="urow">
+        <div class="urn"><b>${u.nm||'—'}</b> <span style="color:var(--td);font-size:9px">@${u.un} · ${u.region||'—'}</span></div>
+        <span class="urol ${u.banned?'rbn':u.role==='admin'?'ra':'ru'}">${u.banned?'YASAK':u.role?u.role.toUpperCase():'USER'}</span>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm ${u.banned?'g':'r'}" onclick="admBan('${u.un}')">${u.banned?'AÇ':'YASAK'}</button>
+          ${u.role!=='admin'?`<button class="btn o sm" onclick="admProm('${u.un}')">ADMİN</button>`:''}
+          <button class="btn sm" onclick="admDelU('${u.un}')">SİL</button>
+        </div>
+      </div>`).join('')
+    : '<div style="color:var(--td);font-size:11px;padding:8px">Henüz başka kayıtlı kullanıcı yok.</div>';
+
+  // ── Not yönetimi ──────────────────────────────────────────────────────
+  document.getElementById('admn').innerHTML=notes.slice(-20).reverse().map(n=>`<div class="nrow">
+    <div class="ntxt"><b style="color:var(--a2)">${n.cap}</b>: ${n.txt}</div>
+    <button class="btn r sm" onclick="admDelN(${n.id})">SİL</button>
+  </div>`).join('')||'<div style="color:var(--td);font-size:10px">Not yok</div>';
+
+  // ── Chat moderasyonu — son 30 mesaj, sil butonu her satırda ───────────
+  const admcEl=document.getElementById('admc');
+  if(admcEl){
+    const msgs=chat.filter(m=>!m.sys).slice(-30).reverse();
+    admcEl.innerHTML=msgs.length
+      ? msgs.map(m=>`<div class="nrow" style="align-items:center">
+          <div class="ntxt">
+            <b style="color:var(--a2)">${esc(m.snd)}</b>
+            <span style="color:var(--td);font-size:9px;margin:0 4px">${tago(m.time)}</span>
+            ${esc(m.txt)}
+          </div>
+          <button class="btn r sm" onclick="admDelChat(${m.id})" title="Mesajı sil">🗑️</button>
+        </div>`).join('')
+      : '<div style="color:var(--td);font-size:10px">Mesaj yok</div>';
+  }
+}
+
+function admBan(un){const u=users.find(x=>x.un===un);if(u){u.banned=!u.banned;ls(K2,users);renderAdmin();}}
+function admProm(un){const u=users.find(x=>x.un===un);if(u){u.role='admin';ls(K2,users);renderAdmin();}}
+function admDelU(un){if(!confirm('Sil?'))return;users=users.filter(x=>x.un!==un);ls(K2,users);renderAdmin();}
+function admDelN(id){notes=notes.filter(n=>n.id!==id);ls(K1,notes);renderNotes();renderLog();renderAdmin();}
+function admAnn(){const t=document.getElementById('adann').value.trim();if(!t)return;addCSys(`📢 ADMİN DUYURUSU: ${t}`);document.getElementById('adann').value='';alert('Duyuru gönderildi!');}
+
+// Admin: Chat mesajı sil — hem yerelde hem Firebase'de
+function admDelChat(msgId){
+  if(!confirm('Bu mesaj silinsin mi?'))return;
+  // Yerelden sil
+  chat=chat.filter(m=>String(m.id)!==String(msgId));
+  ls(K4,chat);
+  renderChat();
+  renderAdmin();
+  // Firebase'den sil — hem 'chat/' hem 'messages/' yolunu dene
+  if(fbReady&&db){
+    db.ref('chat/'+msgId).remove().catch(()=>{});
+    db.ref('messages/'+msgId).remove().catch(()=>{});
+  }
+}
+
+function goAdmin(btn){
+  if(!CU||CU.role!=='admin'){
+    alert('⚠ Bu sayfaya erişim yetkiniz yok!'); // Şifre ipucunu sildik
+    return;
+  }
+  goPg('admin-pg',btn);
+  renderAdmin();
+}
+
+
+
+// ══════════════════════════════════════════════════════
+// HAVA DURUMU SAYFASI
+// ══════════════════════════════════════════════════════
+function goWx(btn){
+  goPg('wx-pg',btn);
+  loadWxPage();
+}
+
+async function loadWxPage(){
+  const loadEl=document.getElementById('wxloading');
+  if(loadEl)loadEl.style.display='block';
+  
+  // Koordinat: konum varsa onu, yoksa harita merkezi
+  const lat = myLat||mapO.getCenter().lat;
+  const lng = myLng||mapO.getCenter().lng;
+
+  // Yer adını al
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`);
+    const j=await r.json();const a=j.address||{};
+    const pname=[a.county||a.city||a.town||a.village||'',a.state||''].filter(Boolean).join(', ');
+    const locEl=document.getElementById('wxlocname');
+    if(locEl&&pname)locEl.textContent=pname;
+  }catch(e){}
+
+  try{
+    // Open-Meteo: anlık + saatlik + günlük tahmin
+    const url=`https://api.open-meteo.com/v1/forecast`+
+      `?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`+
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,surface_pressure,`+
+      `wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,`+
+      `cloud_cover,visibility,uv_index,wave_height,wave_period,weather_code`+
+      `&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wave_height,weather_code,precipitation_probability`+
+      `&daily=temperature_2m_max,temperature_2m_min,weather_code,wind_speed_10m_max,wave_height_max,sunrise,sunset`+
+      `&wind_speed_unit=ms&forecast_days=7&timezone=auto`;
+    
+    const d=await(await fetch(url)).json();
+    const c=d.current;
+    const h=d.hourly;
+    const day=d.daily;
+
+    // Güncelleme zamanı
+    const utEl=document.getElementById('wxupdtime');
+    if(utEl)utEl.textContent=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+' güncel';
+
+    // Anlık değerler
+    function setEl(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+    
+    const ws=c.wind_speed_10m!=null?parseFloat(c.wind_speed_10m).toFixed(1):'—';
+    const wd=c.wind_direction_10m!=null?deg2nm(c.wind_direction_10m):'—';
+    const tp=c.temperature_2m!=null?parseFloat(c.temperature_2m).toFixed(1):'—';
+    const feel=c.apparent_temperature!=null?parseFloat(c.apparent_temperature).toFixed(1):'—';
+    const wv=c.wave_height!=null?parseFloat(c.wave_height).toFixed(1):'—';
+    const wper=c.wave_period!=null?parseFloat(c.wave_period).toFixed(0):'—';
+    const pr=c.surface_pressure!=null?Math.round(c.surface_pressure):'—';
+    const gust=c.wind_gusts_10m!=null?parseFloat(c.wind_gusts_10m).toFixed(1):'—';
+    const hum=c.relative_humidity_2m!=null?Math.round(c.relative_humidity_2m):'—';
+    const cloud=c.cloud_cover!=null?Math.round(c.cloud_cover)+'%':'—';
+    const rain=c.precipitation!=null?parseFloat(c.precipitation).toFixed(1):'—';
+    const vis=c.visibility!=null?(c.visibility/1000).toFixed(1):'—';
+    const uv=c.uv_index!=null?parseFloat(c.uv_index).toFixed(0):'—';
+
+    setEl('wxc-temp',tp+'°C');
+    setEl('wxc-feel','Hissedilen '+feel+'°C');
+    setEl('wxc-wind',wd+' '+ws+'m/s');
+    setEl('wxc-gust','Ani '+gust+'m/s');
+    setEl('wxc-wave',wv+'m');
+    setEl('wxc-wper','Periyot '+wper+'s');
+    setEl('wxc-pres',pr+'hPa');
+    setEl('wxc-ptend',parseFloat(pr)>1015?'Yüksek ↑':'Düşük ↓');
+    setEl('wxc-hum',hum+'%');
+    setEl('wxc-cloud',cloud);
+    setEl('wxc-rain',rain+' mm/h');
+    setEl('wxc-vis',vis+' km');
+    setEl('wxc-uv',uv);
+    // çiy noktası tahmini: T - (100-H)/5
+    const dewp=tp!=='—'&&hum!=='—'?(parseFloat(tp)-(100-parseFloat(hum))/5).toFixed(1)+'°C':'—';
+    setEl('wxc-dewp',dewp);
+
+    // Uyarılar
+    const stormEl=document.getElementById('wxalert-storm');
+    const windEl=document.getElementById('wxalert-wind');
+    const waveEl=document.getElementById('wxalert-wave');
+    if(stormEl){
+      const isStorm=parseFloat(ws)>15||parseFloat(wv)>2.5;
+      stormEl.classList.toggle('show',isStorm);
+      if(isStorm)document.getElementById('wxalert-storm-txt').textContent=`Rüzgar ${ws}m/s, Dalga ${wv}m — Denize çıkmayın!`;
+    }
+    if(windEl){
+      const isWind=parseFloat(ws)>8&&parseFloat(ws)<=15;
+      windEl.classList.toggle('show',isWind);
+      if(isWind)document.getElementById('wxalert-wind-txt').textContent=`${wd} yönünden ${ws}m/s rüzgar — Dikkatli olun.`;
+    }
+    if(waveEl){
+      const isWave=parseFloat(wv)>1.5;
+      waveEl.classList.toggle('show',isWave);
+      if(isWave)document.getElementById('wxalert-wave-txt').textContent=`Dalga yüksekliği ${wv}m, periyot ${wper}s`;
+    }
+
+    // Balıkçılık koşul skoru
+    let score=70;
+    if(parseFloat(ws)>12)score-=30; else if(parseFloat(ws)>8)score-=15; else if(parseFloat(ws)<4)score+=10;
+    if(parseFloat(wv)>2)score-=25; else if(parseFloat(wv)>1.2)score-=10; else if(parseFloat(wv)<0.5)score+=10;
+    if(cloud!=='—'&&parseInt(cloud)>80)score-=5;
+    score=Math.max(0,Math.min(100,score));
+    
+    const fcLbl=document.getElementById('wxfclbl');
+    const fcBar=document.getElementById('wxfcbar');
+    const fcDet=document.getElementById('wxfcdetail');
+    if(fcLbl){
+      fcLbl.textContent=score>=70?'🟢 MÜKEMMEL':score>=50?'🟡 ORTA':score>=30?'🟠 ZAYIF':'🔴 KÖTÜ';
+      fcLbl.style.color=score>=70?'var(--a2)':score>=50?'var(--w)':score>=30?'var(--a3)':'var(--r)';
+    }
+    if(fcBar){
+      fcBar.style.width=score+'%';
+      fcBar.className='fcbar '+(score>=70?'fcgood':score>=50?'fcmid':'fcbad');
+    }
+    if(fcDet){
+      const reasons=[];
+      if(parseFloat(ws)<=6)reasons.push('✅ Rüzgar sakin');
+      else if(parseFloat(ws)>12)reasons.push('❌ Çok kuvvetli rüzgar');
+      else reasons.push('⚠️ Orta rüzgar');
+      if(parseFloat(wv)<=1)reasons.push('✅ Deniz sakin');
+      else if(parseFloat(wv)>2)reasons.push('❌ Yüksek dalga');
+      else reasons.push('⚠️ Orta dalga');
+      if(parseInt(uv)>=7)reasons.push('⚠️ UV yüksek — güneş kremi');
+      fcDet.textContent=reasons.join(' · ');
+    }
+
+    // Saatlik tahmin (24 saat)
+    const hoursEl=document.getElementById('wxhours');
+    if(hoursEl&&h&&h.time){
+      const now=new Date();
+      const items=h.time.slice(0,24).map((t,i)=>{
+        const dt=new Date(t);
+        const isNow=Math.abs(dt-now)<1800000;
+        const wcode=h.weather_code?.[i]||0;
+        const icon=wxIcon(wcode);
+        const temp=h.temperature_2m?.[i]!=null?parseFloat(h.temperature_2m[i]).toFixed(0):'—';
+        const wind=h.wind_speed_10m?.[i]!=null?parseFloat(h.wind_speed_10m[i]).toFixed(0):'—';
+        const wave=h.wave_height?.[i]!=null?parseFloat(h.wave_height[i]).toFixed(1):'—';
+        return`<div class="hcard${isNow?' now':''}">
+          <div class="htime">${dt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="hicon">${icon}</div>
+          <div class="htemp">${temp}°</div>
+          <div class="hwind">💨${wind}</div>
+          <div class="hwave">🌊${wave}m</div>
+        </div>`;
+      });
+      hoursEl.innerHTML=items.join('');
+    }
+
+    // 7 günlük tahmin
+    const days7El=document.getElementById('wx7days');
+    if(days7El&&day&&day.time){
+      const gunler=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+      const items=day.time.map((t,i)=>{
+        const dt=new Date(t);
+        const isToday=i===0;
+        const icon=wxIcon(day.weather_code?.[i]||0);
+        const tmax=day.temperature_2m_max?.[i]!=null?parseFloat(day.temperature_2m_max[i]).toFixed(0):'—';
+        const tmin=day.temperature_2m_min?.[i]!=null?parseFloat(day.temperature_2m_min[i]).toFixed(0):'—';
+        const wmax=day.wind_speed_10m_max?.[i]!=null?parseFloat(day.wind_speed_10m_max[i]).toFixed(0):'—';
+        const wvmax=day.wave_height_max?.[i]!=null?parseFloat(day.wave_height_max[i]).toFixed(1):'—';
+        const trange=parseFloat(tmax)-parseFloat(tmin);
+        const barW=Math.min(100,Math.max(10,(trange/20)*100));
+        return`<div class="dayrow">
+          <div class="dayname">${isToday?'Bugün':gunler[dt.getDay()]}</div>
+          <div class="dayicon">${icon}</div>
+          <div class="daytemp"><span class="daytmax">${tmax}°</span><span class="daytmin">${tmin}°</span></div>
+          <div class="daybar-wrap"><div class="daybar" style="width:${barW}%"></div></div>
+          <div class="daywind">💨${wmax}m/s</div>
+          <div class="daywave">🌊${wvmax}m</div>
+        </div>`;
+      });
+      days7El.innerHTML=items.join('');
+    }
+
+    if(loadEl)loadEl.style.display='none';
+
+  }catch(err){
+    console.error('Weather page error:',err);
+    if(loadEl)loadEl.textContent='❌ Hava durumu yüklenemedi. Lütfen yenileyin.';
+  }
+}
+
+// Hava kodu → emoji
+function wxIcon(code){
+  if(code===0)return'☀️';
+  if(code<=2)return'🌤️';
+  if(code<=3)return'☁️';
+  if(code<=48)return'🌫️';
+  if(code<=55)return'🌧️';
+  if(code<=65)return'🌧️';
+  if(code<=75)return'❄️';
+  if(code<=82)return'🌦️';
+  if(code<=86)return'🌨️';
+  if(code<=99)return'⛈️';
+  return'🌡️';
+}
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+function goPg(id,btn){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  if(id==='chat-pg')renderChat();
+  if(id==='map-pg')for(const ms of[50,200,500])setTimeout(()=>mapO&&mapO.invalidateSize(true),ms);
+}
+
+// ══════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════
+function showM(h){document.getElementById('amod').innerHTML=h;document.getElementById('mov').classList.add('on');}
+function hidM(){document.getElementById('mov').classList.remove('on');}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function init(){
+  loadAll();
+  initMap();
+  renderNotes();
+  renderLog();
+  loadChat();
+  recalc();
+  fetchW();
+
+  if(CU){
+    document.getElementById('captname').textContent=CU.nm;
+    if(CU.role==='admin'){
+      document.getElementById('admBtn').style.display='inline-block';
+    }
+  }
+
+  updateMobMenu();
+  let wt;
+  mapO.on('moveend',()=>{clearTimeout(wt);wt=setTimeout(fetchW,2500);});
+  setInterval(fetchW,600000);
+  setInterval(()=>{
+    if(document.getElementById('chat-pg')?.classList.contains('on')){chat=lg(K4)||[];renderChat();}
+    document.getElementById('onlc').textContent=`● ${Math.floor(Math.random()*5)+1} Çevrimiçi`;
+    updateMobWeather();
+  },5000);
+}
+
+document.addEventListener('DOMContentLoaded',init);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hidM();});
+
+// ══════════════════════════════════════════════════════
+// MOBİL MENÜ
+// ══════════════════════════════════════════════════════
+function openMobMenu(){
+  document.getElementById('mobmenu').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeMobMenu(){
+  document.getElementById('mobmenu').classList.remove('open');
+  document.body.style.overflow='';
+}
+function _setActive(bnId,mnId){
+  document.querySelectorAll('.bnitem').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.mob-navitem').forEach(m=>m.classList.remove('on'));
+  if(bnId)document.getElementById(bnId)?.classList.add('on');
+  if(mnId)document.getElementById(mnId)?.classList.add('on');
+}
+function mobGo(pgId,mnId,bnId){goPg(pgId,null);_setActive(bnId,mnId);closeMobMenu();}
+function mobGoWx(){goWx(null);_setActive('bn-wx','mn-wx');closeMobMenu();}
+function mobGoReq(pgId,mnId,bnId){
+  if(!CU){openAuth();closeMobMenu();return;}
+  goPg(pgId,null);_setActive(bnId,mnId);closeMobMenu();
+}
+function mobGoAdmin(){
+  if(!CU||CU.role!=='admin'){alert('⚠ Yetki gerekli!');closeMobMenu();return;}
+  goPg('admin-pg',null);renderAdmin();_setActive(null,'mn-adm');closeMobMenu();
+}
+function updateMobMenu(){
+  const adm=document.getElementById('mn-adm');
+  const mu=document.getElementById('mobmenu-user');
+  if(CU){
+    if(CU.role==='admin'&&adm)adm.style.display='';
+    if(mu)mu.textContent=`🎣 ${CU.nm} · ${CU.region}`;
+  } else {
+    if(adm)adm.style.display='none';
+    if(mu)mu.textContent='Giriş yapılmadı';
+  }
+}
+function updateMobWeather(){
+  const mw=e=>{const el=document.getElementById(e);return el?el.textContent:'—';};
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('mob-wind',mw('wiwv'));set('mob-temp',mw('witv'));
+  set('mob-pres',mw('wipv'));set('mob-wave',mw('wiwav'));
+}
+
+// ══════════════════════════════════════════════════════
+// FİREBASE REALTIME DATABASE — compat SDK
+// ══════════════════════════════════════════════════════
+let db=null,fbReady=false;
+
+function setFbSt(cls,txt){
+  const el=document.getElementById('fbst');if(!el)return;
+  el.className=cls;el.textContent=txt;
+  if(cls!=='err')setTimeout(()=>{el.className='';el.textContent='⬡ FB';},3000);
+}
+function fbInit(){
+  if(!window.firebase){console.warn('Firebase SDK yüklenmedi');return;}
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
+    db=firebase.database();fbReady=true;
+    setFbSt('ok','🔥 Firebase Bağlı');
+
+    db.ref('notes/').on('child_added',snap=>{
+      const n=snap.val();if(!n)return;
+      if(!notes.find(x=>x.id===n.id)){notes.push(n);ls(K1,notes);addNM(n);renderLog();}
+    });
+
+    // ── Chat: child_added dinle + silinenleri de yakala ─────────────────
+    db.ref('chat/').limitToLast(100).on('child_added',snap=>{
+      const m=snap.val();if(!m)return;
+      if(!chat.find(x=>x.id===m.id)){
+        chat.push(m);ls(K4,chat);
+        if(document.getElementById('chat-pg')?.classList.contains('on'))renderChat();
+      }
+    });
+    // Mesaj Firebase'den silinince yerelde de sil ve yenile
+    db.ref('chat/').on('child_removed',snap=>{
+      chat=chat.filter(m=>String(m.id)!==String(snap.key)&&m.id!==snap.val()?.id);
+      ls(K4,chat);
+      if(document.getElementById('chat-pg')?.classList.contains('on'))renderChat();
+      if(document.getElementById('admin-pg')?.classList.contains('on'))renderAdmin();
+    });
+
+    // ── Kullanıcı listesi: on('value') ile TÜM listeyi anlık çek ────────
+    db.ref('users/').on('value', snap => {
+      const fbUsers = [];
+      if (snap.exists()) {
+        snap.forEach(child => {
+          const u = child.val();
+          if (u && u.un) {
+            // Şifre sadece yerel tutulur, FB'de yok
+            const local = users.find(x => x.un === u.un);
+            fbUsers.push({ ...u, pw: local?.pw || '' });
+          }
+        });
+      }
+      // Yerel admin kaydı FB'de yoksa ekle (bootstrap durumu)
+      users.forEach(local => {
+        if (!fbUsers.find(f => f.un === local.un)) fbUsers.push(local);
+      });
+      users = fbUsers;
+      ls(K2, users);
+      // Admin paneli açıksa anlık yenile
+      if (document.getElementById('admin-pg')?.classList.contains('on')) renderAdmin();
+    });
+  }catch(e){setFbSt('err','❌ FB: '+e.message);console.warn('Firebase init:',e);}
+}
+
+function fbPush(path,data){
+  if(!fbReady||!db)return;
+  db.ref(path).set(data)
+    .then(()=>setFbSt('sync','✅ Senkron'))
+    .catch(e=>setFbSt('err','❌'+e.message));
+}
+function fbRemove(path){if(fbReady&&db)db.ref(path).remove().catch(()=>{});}
+
+// ── Fonksiyon köprüleri (override) ──────────────────
+const _origSaveNote=window.saveNote;
+window.saveNote=function(){
+  const txt=document.getElementById('ntxt')?.value?.trim();
+  const st=document.getElementById('nst')?.value;
+  if(!txt){alert('Not yazın.');return;}
+  const n={id:Date.now(),lat:pendC.lat,lng:pendC.lng,txt,st,cap:CU.nm,time:Date.now()};
+  notes.push(n);ls(K1,notes);addNM(n);renderLog();hidM();
+  nmMode=false;
+  document.getElementById('nmbanner').style.display='none';
+  mapO.getContainer().style.cursor='';
+  mapO.setView([n.lat,n.lng],Math.max(mapO.getZoom(),13));
+  fbPush('notes/'+n.id,n);
+};
+
+const _origSendChat=window.sendChat;
+window.sendChat=function(){
+  if(!CU){openAuth();return;}
+  const inp=document.getElementById('chinp'),txt=inp.value.trim();
+  if(!txt)return;
+  const msg={id:Date.now(),snd:CU.nm,txt,time:Date.now()};
+  chat.push(msg);if(chat.length>200)chat=chat.slice(-200);
+  ls(K4,chat);inp.value='';renderChat();
+  fbPush('chat/'+msg.id,msg);
+};
+
+const _origDoReg=window.doReg;
+window.doReg=function(){
+  const nm=document.getElementById('rnm').value.trim();
+  const u=document.getElementById('ruu').value.trim();
+  const p=document.getElementById('rup').value;
+  const rg=document.getElementById('rrg').value.trim();
+  const err=document.getElementById('rerr');
+  if(!nm||!u||!p){err.textContent='Tüm alanları doldurun.';err.classList.add('on');return;}
+  if(p.length<6){err.textContent='Şifre en az 6 karakter.';err.classList.add('on');return;}
+  if(users.find(x=>x.un===u)){err.textContent='Bu kullanıcı adı alınmış.';err.classList.add('on');return;}
+  err.classList.remove('on');
+  const nu={un:u,pw:p,nm,role:'user',region:rg||'Belirtilmedi',banned:false,joined:Date.now()};
+  users.push(nu);ls(K2,users);loginUser(nu);
+  const safe={un:u,nm,role:'user',region:rg||'Belirtilmedi',banned:false,joined:nu.joined};
+  fbPush('users/'+u,safe);
+};
+
+window.admBan=function(un){
+  const usr=users.find(x=>x.un===un);if(!usr)return;
+  usr.banned=!usr.banned;ls(K2,users);renderAdmin();
+  fbPush('users/'+un,{un:usr.un,nm:usr.nm,role:usr.role,region:usr.region,banned:usr.banned,joined:usr.joined});
+};
+window.admProm=function(un){
+  const usr=users.find(x=>x.un===un);if(!usr)return;
+  usr.role='admin';ls(K2,users);renderAdmin();
+  fbPush('users/'+un,{un:usr.un,nm:usr.nm,role:'admin',region:usr.region,banned:usr.banned,joined:usr.joined});
+};
+window.admDelU=function(un){
+  if(!confirm('Sil?'))return;
+  users=users.filter(x=>x.un!==un);ls(K2,users);renderAdmin();fbRemove('users/'+un);
+};
+window.admDelN=function(id){
+  notes=notes.filter(n=>n.id!==id);ls(K1,notes);renderNotes();renderLog();renderAdmin();fbRemove('notes/'+id);
+};
+window.loginUser=function(u){
+  CU=u;ls(K3,u.un);
+  document.getElementById('captname').textContent=u.nm;
+  if(u.role==='admin')document.getElementById('admBtn').style.display='inline-block';
+  addCSys(`${u.nm} Kamışını aldı geldi ⚓`);
+  updateMobMenu();
+  goPg('map-pg',document.querySelector('.ntab'));
+};
+</script>
+
+<!-- ══ FİREBASE SDK compat ══ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ── Firebase Yapılandırması ──
+// Firebase konsolunuzdan gerçek değerleri girin:
+window.FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "balikci-radari.firebaseapp.com",
+  databaseURL:       "https://balikci-radari-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "balikci-radari",
+  storageBucket:     "balikci-radari.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+document.addEventListener('DOMContentLoaded', fbInit);
+</script>
+</body>
+</html>
