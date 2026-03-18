@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7554483644295258" crossorigin="anonymous"></script>
 <meta name="description" content="Gelibolu balık meraları, hava durumu ve yapay zeka destekli balık avı analiz sistemi. En güncel mera takibi.">
 <meta name="keywords" content="balık radarı, gelibolu balık avı, mera takibi, balıkçı radarı, çanakkale balık avı, lüfer meraları">
 <meta charset="UTF-8">
@@ -411,7 +412,7 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
 
   /* Bottom nav göster */
   #botnav{display:block;}
-  body{padding-bottom:56px;}
+  body{padding-bottom:56px;}  /* botnav yüksekliği */
 }
 
 /* ══ KÜÇÜK MOBİL ≤ 420px ══ */
@@ -556,6 +557,89 @@ body.role-admin  .fd { /* normal — JS toggle ile açılabilir */ }
   pointer-events:none;z-index:1;
 }
 .un-input-wrap .ri{ padding-left:22px; }
+
+
+/* ── YASAL MODAL ── */
+#legal-mov{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.9);
+  z-index:5000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+#legal-mov.on{display:flex;}
+.legal-box{
+  background:var(--modal);
+  border:1px solid var(--bb);
+  border-radius:8px;
+  padding:24px;
+  width:540px;
+  max-width:96vw;
+  max-height:88vh;
+  overflow-y:auto;
+  box-shadow:0 0 50px rgba(0,200,255,.15);
+  position:relative;
+}
+.legal-box::-webkit-scrollbar{width:3px;}
+.legal-box::-webkit-scrollbar-thumb{background:var(--b);}
+.legal-title{
+  font-family:'Orbitron',monospace;
+  font-size:12px;
+  letter-spacing:2px;
+  color:var(--a);
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--b);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.legal-close{
+  position:absolute;top:16px;right:16px;
+  background:rgba(255,59,59,.1);
+  border:1px solid rgba(255,59,59,.3);
+  color:var(--r);
+  width:28px;height:28px;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:14px;
+  line-height:1;
+  transition:all .2s;
+}
+.legal-close:hover{background:rgba(255,59,59,.2);}
+.legal-section{margin-bottom:16px;}
+.legal-section h3{
+  font-family:'Orbitron',monospace;
+  font-size:9px;
+  letter-spacing:2px;
+  color:var(--a2);
+  margin-bottom:7px;
+  text-transform:uppercase;
+}
+.legal-section p, .legal-section li{
+  font-size:11px;
+  color:var(--t);
+  line-height:1.8;
+}
+.legal-section ul{list-style:none;padding:0;}
+.legal-section li::before{content:'▸ ';color:var(--a2);}
+.legal-contact{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:rgba(0,200,255,.06);
+  border:1px solid rgba(0,200,255,.2);
+  border-radius:4px;
+  padding:7px 12px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;
+  color:var(--a);
+  margin-top:6px;
+}
+
+
 </style>
 </head>
 <body>
@@ -568,6 +652,9 @@ body.role-admin  .fd { /* normal — JS toggle ile açılabilir */ }
     <button class="ntab"     onclick="goWx(this)">🌤 HAVA DURUMU</button>
     <button class="ntab"     onclick="reqLog('chat-pg',this)">💬 SOHBET</button>
     <button class="ntab adm" id="admBtn" onclick="goAdmin(this)" style="display:none">⚙ ADMİN</button>
+    <button class="ntab" onclick="showLegal('about')">💡 HAKKIMIZDA</button>
+    <button class="ntab" onclick="showLegal('privacy')">🔒 GİZLİLİK</button>
+    <button class="ntab" onclick="showLegal('contact')">📧 İLETİŞİM</button>
   </div>
   <div id="wbar">
     <div class="wi ld" id="wiw">🧭<span id="wiwv">—</span></div>
@@ -1790,18 +1877,44 @@ function showForgotPass(){
 }
 
 /** Firebase Auth uid'den kullanıcı profilini Realtime DB'den çeker */
+// Süper Admin listesi — bu e-postalar her zaman admin rolü alır
+const SUPER_ADMINS = ['ayazerresmii@gmail.com'];
+
 function fetchUserProfile(uid, email){
-  if(!fbReady||!db){ loginUser({un:email,nm:email,role:'amator',region:'—',email}); return; }
+  const isSuperAdmin = SUPER_ADMINS.includes((email||'').toLowerCase());
+
+  if(!fbReady||!db){
+    loginUser({
+      un: email, nm: isSuperAdmin ? 'Kaptan Admin' : email,
+      role: isSuperAdmin ? 'admin' : 'amator',
+      region: isSuperAdmin ? 'Merkez' : '—', email
+    });
+    return;
+  }
+
   db.ref('users/'+uid).once('value').then(snap=>{
     if(snap.exists()){
       const u = snap.val();
-      loginUser({...u, uid, email, pw:''});
+      // Süper admin ise rolü daima admin olarak zorla
+      const finalRole = isSuperAdmin ? 'admin' : (u.role||'amator');
+      if(isSuperAdmin && u.role !== 'admin'){
+        db.ref('users/'+uid+'/role').set('admin').catch(()=>{});
+      }
+      loginUser({...u, uid, email, role: finalRole, pw:''});
     } else {
       // İlk giriş — profil oluştur
-      const nu = {uid, email, un:email.split('@')[0], nm:email.split('@')[0], role:'amator', region:'Belirtilmedi', fishType:'shore', banned:false, joined:Date.now()};
-      db.ref('users/'+uid).set(nu);
+      const role = isSuperAdmin ? 'admin' : 'amator';
+      const nm   = isSuperAdmin ? 'Kaptan Admin' : email.split('@')[0];
+      const nu = {
+        uid, email, un: email.split('@')[0], nm, role,
+        region: isSuperAdmin ? 'Merkez' : 'Belirtilmedi',
+        fishType:'shore', userMode:'shore', banned:false, joined:Date.now()
+      };
+      db.ref('users/'+uid).set(nu).catch(()=>{});
       loginUser({...nu, pw:''});
     }
+  }).catch(()=>{
+    loginUser({un:email, nm:email, role: isSuperAdmin?'admin':'amator', region:'—', email});
   });
 }
 
@@ -2693,6 +2806,8 @@ function admFirebaseLogin() {
     .then(cred => {
       authUser = cred.user;
       setFbSt('ok', '🔑 Admin girişi tamam');
+      // Süper admin e-postası ise profili yükle (rol garantisi)
+      fetchUserProfile(cred.user.uid, cred.user.email);
     })
     .catch(e => {
       setFbSt('err', '❌ ' + e.message);
@@ -2784,6 +2899,142 @@ function init(){
 
 document.addEventListener('DOMContentLoaded',init);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hidM();});
+// ══════════════════════════════════════════════════════
+// YASAL MODAL (Hakkımızda / Gizlilik / İletişim)
+// ══════════════════════════════════════════════════════
+const LEGAL_CONTENT = {
+  about: {
+    title: '⚓ Hakkımızda',
+    html: `
+      <div class="legal-section">
+        <p>
+          <strong style="color:var(--a)">Balıkçı Radarı</strong>; Türkiye karasularında amatör ve
+          profesyonel balıkçılar için bilimsel veri analizi, anlık hava durumu ve lokasyon bazlı
+          verimlilik katsayısı sunan dijital bir rehberdir.
+        </p>
+      </div>
+      <div class="legal-section">
+        <h3>Ne Sunuyoruz?</h3>
+        <ul>
+          <li>Gerçek zamanlı hava ve dalga verisi (Open-Meteo & Windy API)</li>
+          <li>35+ Türkiye kıyı noktası için balık tahmin algoritması</li>
+          <li>Bölge ve mevsim katsayısına göre dinamik hesaplama</li>
+          <li>Kullanıcı topluluk notları ve av günlüğü</li>
+          <li>Kıyı / Tekne balıkçılığı modları</li>
+          <li>Firebase tabanlı güvenli kullanıcı sistemi</li>
+        </ul>
+      </div>
+      <div class="legal-section">
+        <h3>Yasal Uyarı</h3>
+        <p>
+          Balık tahmin algoritması istatistiksel bir modeldir. Gerçek av sonuçlarını garanti etmez.
+          Ticari kararlar için profesyonel danışmanlık alınmasını tavsiye ederiz.
+          Uygulama <strong style="color:var(--a2)">balikciradari.com.tr</strong> adresinde yayınlanmaktadır.
+        </p>
+      </div>`
+  },
+
+  privacy: {
+    title: '🔒 Gizlilik Politikası',
+    html: `
+      <div class="legal-section">
+        <p style="font-size:10px;color:var(--td)">Son güncelleme: Ocak 2025</p>
+        <p>
+          Bu gizlilik politikası, <strong style="color:var(--a)">Balıkçı Radarı</strong>
+          uygulamasının kullanıcı verilerini nasıl topladığını, kullandığını ve koruduğunu açıklar.
+        </p>
+      </div>
+
+      <div class="legal-section">
+        <h3>Toplanan Veriler</h3>
+        <ul>
+          <li>E-posta adresi ve kullanıcı adı (kayıt sırasında)</li>
+          <li>Bölge/liman bilgisi ve av tercihi (isteğe bağlı)</li>
+          <li>Harita notları ve av günlüğü girdileri</li>
+          <li>Tarayıcı konum verisi (GPS — yalnızca cihazda işlenir, sunucuya gönderilmez)</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h3>Çerez (Cookie) Kullanımı</h3>
+        <p>
+          Bu site <strong style="color:var(--w)">Google AdSense</strong> reklamları içerebilir.
+          Google, kullanıcı tercihlerine göre ilgi alanı bazlı reklamlar sunmak amacıyla
+          çerez kullanabilir. Google'ın çerez politikası hakkında ayrıntılı bilgi için:
+        </p>
+        <ul>
+          <li><span style="color:var(--a)">policies.google.com/privacy</span></li>
+          <li><span style="color:var(--a)">policies.google.com/technologies/ads</span></li>
+        </ul>
+        <p style="margin-top:8px">
+          Çerez tercihlerinizi tarayıcı ayarlarından yönetebilirsiniz. Çerezleri devre dışı
+          bırakmak bazı özelliklerin çalışmamasına neden olabilir.
+        </p>
+      </div>
+
+      <div class="legal-section">
+        <h3>Veri Güvenliği</h3>
+        <ul>
+          <li>Kullanıcı verileri <strong style="color:var(--a2)">Firebase (Google)</strong> altyapısında şifreli olarak saklanır</li>
+          <li>Şifreler Firebase Authentication tarafından yönetilir, uygulama katmanında saklanmaz</li>
+          <li>Konum bilgisi hiçbir zaman sunucuya iletilmez</li>
+          <li>Veriler üçüncü şahıslarla satılmaz veya paylaşılmaz</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h3>Kullanıcı Hakları</h3>
+        <p>
+          KVKK ve GDPR kapsamında verilerinize erişme, düzeltme veya silme talebinde bulunabilirsiniz.
+          Talepleriniz için aşağıdaki iletişim adresini kullanın.
+        </p>
+      </div>
+
+      <div class="legal-section">
+        <h3>Değişiklikler</h3>
+        <p>
+          Bu politika zaman zaman güncellenebilir. Önemli değişiklikler uygulama içi
+          duyuru ile bildirilir. Politikanın güncel hali her zaman bu sayfada yayınlanır.
+        </p>
+      </div>`
+  },
+
+  contact: {
+    title: '📡 İletişim',
+    html: `
+      <div class="legal-section">
+        <p>Soru, öneri veya veri talepleriniz için bizimle iletişime geçebilirsiniz.</p>
+        <div class="legal-contact">
+          📧 ayazerresmii@gmail.com
+        </div>
+      </div>
+      <div class="legal-section">
+        <h3>Sosyal</h3>
+        <p>Site: <span style="color:var(--a)">balikciradari.com.tr</span></p>
+      </div>
+      <div class="legal-section">
+        <h3>Geri Bildirim</h3>
+        <p>
+          Balık mera verilerindeki hatalar, yanlış katsayılar veya özellik önerileriniz
+          için e-posta ile ulaşabilirsiniz. Katkılarınız algoritmanın geliştirilmesinde
+          doğrudan kullanılır.
+        </p>
+      </div>`
+  }
+};
+
+function showLegal(key){
+  const data = LEGAL_CONTENT[key];
+  if(!data) return;
+  document.getElementById('legal-title').textContent = data.title;
+  document.getElementById('legal-body').innerHTML = data.html;
+  document.getElementById('legal-mov').classList.add('on');
+}
+function hidLegal(){
+  document.getElementById('legal-mov').classList.remove('on');
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') hidLegal(); });
+
 
 // ══════════════════════════════════════════════════════
 // MOBİL MENÜ
@@ -2997,5 +3248,15 @@ window.FIREBASE_CONFIG = {
 };
 document.addEventListener('DOMContentLoaded', fbInit);
 </script>
+
+<!-- ═══ YASAL MODAL ═══ -->
+<div id="legal-mov" onclick="if(event.target===this)hidLegal()">
+  <div class="legal-box">
+    <button class="legal-close" onclick="hidLegal()">✕</button>
+    <div class="legal-title" id="legal-title">⚓ Hakkımızda</div>
+    <div id="legal-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
