@@ -6,6 +6,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>⚓ Balıkçı Radarı</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -209,24 +212,6 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
 .aerr{color:var(--r);font-size:10px;text-align:center;margin-top:5px;display:none;}
 .aerr.on{display:block;}
 
-/* DATA SOURCES PAGE */
-#src-pg{flex-direction:column;overflow-y:auto;padding:20px;}
-.srch{font-family:'Orbitron',monospace;font-size:13px;letter-spacing:3px;color:var(--a2);margin-bottom:18px;}
-.srcsec{background:var(--card);border:1px solid var(--b);border-radius:6px;padding:14px;margin-bottom:14px;}
-.srcsec h3{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;color:var(--a);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
-.srcsec h3::before{content:'';display:block;width:3px;height:10px;background:var(--a);}
-.src-item{background:rgba(0,0,0,.3);border:1px solid var(--b);border-radius:4px;padding:10px;margin-bottom:8px;}
-.src-name{font-size:13px;font-weight:700;color:var(--tb);margin-bottom:3px;}
-.src-url{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--a);margin-bottom:5px;}
-.src-desc{font-size:11px;color:var(--t);line-height:1.6;}
-.src-badge{display:inline-block;padding:2px 6px;border-radius:2px;font-size:8px;font-family:'Share Tech Mono',monospace;letter-spacing:1px;margin-right:4px;margin-top:4px;}
-.sb-free{background:rgba(0,255,157,.1);color:var(--a2);border:1px solid rgba(0,255,157,.25);}
-.sb-open{background:rgba(0,200,255,.1);color:var(--a);border:1px solid rgba(0,200,255,.25);}
-.sb-est{background:rgba(255,170,0,.1);color:var(--w);border:1px solid rgba(255,170,0,.25);}
-.sb-live{background:rgba(255,107,53,.1);color:var(--a3);border:1px solid rgba(255,107,53,.25);}
-.warn-box{background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.3);border-radius:4px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--t);line-height:1.7;}
-.warn-box strong{color:var(--w);}
-
 
 /* MAP PAGE LAYOUT */
 #map-pg{flex-direction:row;}
@@ -416,7 +401,6 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
   .hcard{min-width:56px;}
 
   /* Sources */
-  #src-pg{padding:14px;height:auto;}
 
   /* Banner ve sonar */
   #nmbanner{bottom:64px;}
@@ -438,6 +422,140 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
   .mob-navitem{padding:13px 14px;font-size:15px;}
   .stn{font-size:20px;}
 }
+
+/* ── POPÜLER MERALAR ── */
+.pm-card{background:var(--card);border:1px solid var(--b);border-radius:5px;padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.pm-card:hover{border-color:var(--a2);transform:translateX(2px);}
+.pm-card.active{border-color:var(--a2);background:rgba(0,255,157,.05);}
+.pm-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--a2);}
+.pm-name{font-size:13px;font-weight:700;color:var(--tb);margin-bottom:2px;}
+.pm-region{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--a);margin-bottom:3px;}
+.pm-fish{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+.pm-fb{font-size:8px;padding:1px 5px;border-radius:2px;background:rgba(0,200,255,.1);color:var(--a);border:1px solid rgba(0,200,255,.2);}
+.pm-eff{font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:700;float:right;}
+.pm-eff.hi{color:var(--a2);}
+.pm-eff.md{color:var(--w);}
+.pm-eff.lo{color:var(--a3);}
+
+/* ── TEKNE / KIYI TOGGLE ── */
+.fish-mode-row{display:flex;gap:5px;margin-bottom:8px;}
+.fmode-btn{flex:1;padding:7px 4px;border-radius:4px;border:1px solid var(--b);background:rgba(0,0,0,.3);color:var(--td);cursor:pointer;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:1px;transition:all .2s;text-align:center;}
+.fmode-btn.on{border-color:var(--a);background:rgba(0,200,255,.15);color:var(--a);}
+.fmode-btn.boat.on{border-color:var(--a3);background:rgba(255,107,53,.12);color:var(--a3);}
+
+/* ── SEÇİLİ MERA BANNER ── */
+#active-spot-banner{background:linear-gradient(90deg,rgba(0,255,157,.1),rgba(0,200,255,.08));border:1px solid var(--a2);border-radius:4px;padding:7px 10px;margin-bottom:6px;display:none;font-size:11px;}
+#active-spot-banner .asb-name{font-weight:700;color:var(--a2);font-family:'Orbitron',monospace;font-size:10px;}
+#active-spot-banner .asb-region{font-size:9px;color:var(--td);font-family:'Share Tech Mono',monospace;}
+
+/* ── ADMIN AUTH MODAL ── */
+.adm-auth-box{background:var(--card);border:1px solid rgba(255,170,0,.4);border-radius:6px;padding:18px;margin-bottom:12px;}
+.adm-auth-title{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;color:var(--w);margin-bottom:10px;}
+
+/* ── MERA ADMIN FORMU ── */
+.spot-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.spot-form-grid .ir{margin-bottom:0;}
+
+/* ── WINDY WIDGET ── */
+#windy-container{background:var(--card);border:1px solid var(--b);border-radius:6px;overflow:hidden;margin-bottom:14px;position:relative;}
+#windy-container iframe{width:100%;height:400px;border:none;display:block;}
+.windy-coords{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--td);padding:6px 10px;background:rgba(0,0,0,.3);display:flex;justify-content:space-between;align-items:center;}
+.windy-coords span{color:var(--a);}
+#windy-layer-btns{display:flex;gap:4px;padding:8px 10px;background:rgba(0,0,0,.2);flex-wrap:wrap;}
+.wlbtn{background:rgba(0,0,0,.4);border:1px solid var(--b);color:var(--td);padding:4px 8px;border-radius:3px;cursor:pointer;font-size:9px;font-family:'Orbitron',monospace;letter-spacing:1px;transition:all .2s;}
+.wlbtn.on{background:rgba(0,200,255,.15);border-color:var(--a);color:var(--a);}
+
+/* ══════════════════════════════════════════
+   ROL / RÜTBE SİSTEMİ — CSS
+══════════════════════════════════════════ */
+
+/* Rol rozeti header */
+#role-badge-hdr {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: rgba(0,0,0,.4);
+  border: 1px solid var(--b);
+  white-space: nowrap;
+}
+
+/* Giriş yapılmamışken admin butonunu gizle */
+body.logged-out #admBtn { display: none; }
+
+/* Usta+ için kilit kalkıyor */
+body.role-amator .usta-only { opacity: 0.35; pointer-events: none; position: relative; }
+body.role-usta   .usta-only,
+body.role-reis   .usta-only,
+body.role-admin  .usta-only { opacity: 1; pointer-events: auto; }
+
+/* Kilit overlay */
+.role-lock {
+  display: block;
+  background: rgba(2,11,20,.85);
+  border: 1px dashed var(--b);
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--td);
+  margin-top: 4px;
+}
+body.role-usta .role-lock,
+body.role-reis .role-lock,
+body.role-admin .role-lock { display: none; }
+
+/* Amator görünümü — detaylı balık kartı kısıtı */
+body.role-amator .fd { display: none !important; }  /* Balık detay açılmıyor */
+body.role-usta   .fd,
+body.role-reis   .fd,
+body.role-admin  .fd { /* normal — JS toggle ile açılabilir */ }
+
+/* Admin paneli: sadece admin görebilir */
+/* admBtn JS yönetiminde */
+
+/* Windy gelişmiş katmanlar: default gizli, JS açar */
+#windy-adv-layers { display: none; }
+
+/* Kayıt formunda av tipi seçici */
+.fishtype-row { display: flex; gap: 5px; margin-bottom: 6px; }
+.ftbtn {
+  flex: 1; padding: 8px 4px; border-radius: 4px;
+  border: 1px solid var(--b); background: rgba(0,0,0,.3);
+  color: var(--td); cursor: pointer;
+  font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 600;
+  text-align: center; transition: all .2s;
+}
+.ftbtn.on { border-color: var(--a); background: rgba(0,200,255,.12); color: var(--a); }
+.ftbtn.boat.on { border-color: var(--a3); background: rgba(255,107,53,.1); color: var(--a3); }
+
+/* Kullanıcı profil kutusu genişletilmiş */
+.profile-role-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--b);
+}
+.profile-perk {
+  font-size: 10px; color: var(--t); padding: 3px 0;
+  display: flex; align-items: center; gap: 5px;
+}
+.profile-perk::before { content: '▸'; color: var(--a2); }
+
+/* Admin rol yönetimi */
+.role-sel {
+  background: rgba(0,0,0,.5); border: 1px solid var(--b); color: var(--tb);
+  padding: 3px 6px; border-radius: 3px; font-size: 10px;
+  font-family: 'Share Tech Mono', monospace; cursor: pointer;
+}
+
+/* Kullanici adi input — @ prefix iconu */
+.un-input-wrap{ position:relative; }
+.un-input-wrap::before{
+  content:'@';
+  position:absolute;left:9px;top:50%;transform:translateY(-50%);
+  color:var(--a);font-family:'Share Tech Mono',monospace;font-size:12px;
+  pointer-events:none;z-index:1;
+}
+.un-input-wrap .ri{ padding-left:22px; }
 </style>
 </head>
 <body>
@@ -449,7 +567,6 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
     <button class="ntab on"  onclick="goPg('map-pg',this)">🗺 HARİTA</button>
     <button class="ntab"     onclick="goWx(this)">🌤 HAVA DURUMU</button>
     <button class="ntab"     onclick="reqLog('chat-pg',this)">💬 SOHBET</button>
-    <button class="ntab"     onclick="goPg('src-pg',this)">📊 VERİ KAYNAKLARI</button>
     <button class="ntab adm" id="admBtn" onclick="goAdmin(this)" style="display:none">⚙ ADMİN</button>
   </div>
   <div id="wbar">
@@ -463,6 +580,7 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
     <button class="mbt on" onclick="setLyr('sat',this)">UYDU</button>
     <button class="mbt"    onclick="setLyr('str',this)">HARİTA</button>
   </div>
+  <span id="role-badge-hdr" style="display:none"></span>
   <div id="captbtn" onclick="openAuth()">
     <span>🎣</span><span id="captname">GİRİŞ YAP</span>
   </div>
@@ -479,7 +597,7 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
     <div class="mob-navitem on"  id="mn-map" onclick="mobGo('map-pg','mn-map','bn-map')"><span class="mob-navitem-icon">🗺</span>HARİTA</div>
     <div class="mob-navitem"     id="mn-wx"  onclick="mobGoWx()"><span class="mob-navitem-icon">🌤</span>HAVA DURUMU</div>
     <div class="mob-navitem"     id="mn-ch"  onclick="mobGoReq('chat-pg','mn-ch','bn-ch')"><span class="mob-navitem-icon">💬</span>SOHBET</div>
-    <div class="mob-navitem"     id="mn-src" onclick="mobGo('src-pg','mn-src','bn-src')"><span class="mob-navitem-icon">📊</span>VERİ KAYNAKLARI</div>
+
     <div class="mob-navitem adm" id="mn-adm" style="display:none" onclick="mobGoAdmin()"><span class="mob-navitem-icon">⚙</span>ADMİN</div>
     <div class="mob-navitem"     onclick="openAuth();closeMobMenu()"><span class="mob-navitem-icon">👤</span>HESABIM</div>
   </div>
@@ -500,7 +618,7 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
     <button class="bnitem on" id="bn-map" onclick="mobGo('map-pg','mn-map','bn-map')"><span class="bnitem-icon">🗺</span><span class="bnitem-lbl">HARİTA</span></button>
     <button class="bnitem"    id="bn-wx"  onclick="mobGoWx()"><span class="bnitem-icon">🌤</span><span class="bnitem-lbl">HAVA</span></button>
     <button class="bnitem"    id="bn-ch"  onclick="mobGoReq('chat-pg','mn-ch','bn-ch')"><span class="bnitem-icon">💬</span><span class="bnitem-lbl">SOHBET</span></button>
-    <button class="bnitem"    id="bn-src" onclick="mobGo('src-pg','mn-src','bn-src')"><span class="bnitem-icon">📊</span><span class="bnitem-lbl">VERİ</span></button>
+
     <button class="bnitem"    id="bn-ham" onclick="openMobMenu()"><span class="bnitem-icon">☰</span><span class="bnitem-lbl">MENÜ</span></button>
   </div>
 </div>
@@ -515,14 +633,38 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
 <div class="pg on" id="map-pg">
   <!-- LEFT -->
   <div id="lp">
+    <!-- SEÇİLİ MERA BANNER -->
+    <div id="active-spot-banner">
+      <div class="asb-name" id="asb-name">—</div>
+      <div class="asb-region" id="asb-region">—</div>
+    </div>
+
+    <!-- POPÜLER MERALAR (Firebase'den) -->
+    <div class="sec">
+      <div class="stl">⚓ POPÜLER MERALAR</div>
+      <div id="popular-spots">
+        <div style="color:var(--td);font-size:10px;text-align:center;padding:8px">⏳ Firebase'den yükleniyor...</div>
+      </div>
+    </div>
+
+    <!-- TEKNE / KIYI MOD + AI TAHMİN -->
     <div class="sec">
       <div class="stl">AI TAHMİN MOTORU</div>
+      <!-- Tekne / Kıyı toggle -->
+      <div class="fish-mode-row">
+        <button class="fmode-btn on" id="fmode-shore" onclick="setFishMode('shore')">🏖 KIYI</button>
+        <button class="fmode-btn boat" id="fmode-boat"  onclick="setFishMode('boat')">⛵ TEKNE</button>
+      </div>
       <div id="fpreds"></div>
       <div style="font-size:9px;color:var(--td);text-align:center;margin-top:2px">📍 Haritaya tıkla → Nokta analizi</div>
     </div>
     <div class="sec">
       <div class="stl">NOKTA TAVSİYESİ</div>
-      <div id="sprecs"></div>
+      <div id="sprecs" class="usta-only"></div>
+      <div id="sprecs-lock" class="role-lock">
+        🔒 Detaylı nokta tavsiyeleri <b style="color:var(--a)">Usta</b> ve üstü için açıktır.<br>
+        <span style="font-size:9px;color:var(--td)">Daha fazla av yaparak seviye atla!</span>
+      </div>
     </div>
     <div class="sec">
       <div class="stl">MANUEL VERİ</div>
@@ -562,11 +704,12 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
     <div id="sonar"><div class="sr"></div><div class="sr"></div><div class="sr"></div><div class="soc"></div></div>
     <div id="mctrl">
       <button class="mpb loc" id="locbtn" onclick="locateMe()">📡 KONUMUMU BUL</button>
+      <button class="mpb" onclick="fly(38.9,35.2,6)" style="border-color:rgba(0,255,157,.3)">🇹🇷 TÜRKİYE</button>
+      <button class="mpb" onclick="fly(41.02,28.97,10)">📍 İstanbul</button>
       <button class="mpb" onclick="fly(40.395,26.68,9)">📍 Çanakkale</button>
-      <button class="mpb" onclick="fly(40.977,27.514,10)">📍 Tekirdağ</button>
       <button class="mpb" onclick="fly(38.423,27.142,10)">📍 İzmir</button>
       <button class="mpb" onclick="fly(36.886,30.703,10)">📍 Antalya</button>
-      <button class="mpb" onclick="fly(41.02,28.97,10)">📍 İstanbul</button>
+      <button class="mpb" onclick="fly(41.29,36.33,10)">📍 Samsun</button>
       <button class="mpb" onclick="fly(37.22,33.27,10)">📍 Mersin</button>
     </div>
     <div id="nmbanner">🎯 HARITAYA TIKLAYIN — NOT BIRAK</div>
@@ -609,17 +752,25 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
       <div class="atab"    id="atr" onclick="swAuth('reg')">KAYIT OL</div>
     </div>
     <div id="afl">
-      <div class="ir"><div class="il">Kullanıcı Adı</div><input class="ri" id="liu" type="text" placeholder="kaptan_ahmet" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="ir"><div class="il">Kullanici Adi</div><div class="un-input-wrap"><input class="ri" id="liu" type="text" placeholder="kaptan_ahmet" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div></div>
       <div class="ir"><div class="il">Şifre</div><input class="ri" id="lip" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="aerr" id="lerr"></div>
       <button class="btn" style="margin-top:9px" onclick="doLogin()">⚓ GİRİŞ YAP</button>
-      <div style="text-align:center;margin-top:7px;font-size:9px;color:var(--td)"> <span style="color:var(--a)"></span></div>
+      <button class="btn" style="margin-top:5px;background:transparent;border-color:var(--b);color:var(--td);font-size:7px" onclick="showForgotPass()">Şifremi Unuttum</button>
     </div>
     <div id="afr" style="display:none">
       <div class="ir"><div class="il">Kaptan Adı</div><input class="ri" id="rnm" type="text" placeholder="Kaptan Ahmet" maxlength="30"></div>
+      <div class="ir"><div class="il">E-posta</div><input class="ri" id="remail" type="email" placeholder="kaptan@mail.com"></div>
       <div class="ir"><div class="il">Kullanıcı Adı</div><input class="ri" id="ruu" type="text" placeholder="kaptan_ahmet" maxlength="20"></div>
       <div class="ir"><div class="il">Şifre (min 6 karakter)</div><input class="ri" id="rup" type="password" placeholder="••••••••"></div>
       <div class="ir"><div class="il">Bölge / Liman</div><input class="ri" id="rrg" type="text" placeholder="Çanakkale" maxlength="30"></div>
+      <div class="ir">
+        <div class="il">Av Tercihi</div>
+        <div class="fishtype-row">
+          <button class="ftbtn on" id="ft-shore" onclick="setRegFishType('shore',this)">🏖 KIYI</button>
+          <button class="ftbtn boat" id="ft-boat"  onclick="setRegFishType('boat',this)">⛵ TEKNE</button>
+        </div>
+      </div>
       <div class="aerr" id="rerr"></div>
       <button class="btn g" style="margin-top:9px" onclick="doReg()">✅ KAYIT OL</button>
     </div>
@@ -674,6 +825,34 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
       <div class="hscroll" id="wxhours"></div>
     </div>
 
+    <!-- WINDY CANLI HARİTA -->
+    <div id="windy-container">
+      <div class="windy-coords">
+        <span>🌊 Windy Canlı Hava & Dalga Haritası</span>
+        <span id="windy-coord-lbl">📍 <span id="wc-lat">40.39</span>, <span id="wc-lng">26.68</span></span>
+      </div>
+      <div id="windy-layer-btns">
+        <!-- Temel katmanlar: herkese açık -->
+        <button class="wlbtn on" onclick="setWindyLayer('wind',this)">💨 RÜZGAR</button>
+        <button class="wlbtn" onclick="setWindyLayer('temp',this)">🌡️ SICAKLIK</button>
+        <button class="wlbtn" onclick="setWindyLayer('rain',this)">🌧️ YAĞIŞ</button>
+        <!-- Gelişmiş katmanlar: usta+ -->
+        <div id="windy-adv-layers" style="display:none;gap:4px;align-items:center">
+          <button class="wlbtn" onclick="setWindyLayer('waves',this)">🌊 DALGA</button>
+          <button class="wlbtn" onclick="setWindyLayer('currents',this)">🌀 AKINTU</button>
+          <button class="wlbtn" onclick="setWindyLayer('pressure',this)">📊 BASINÇ</button>
+        </div>
+        <div id="windy-lock" class="role-lock" style="padding:4px 8px;font-size:9px">
+          🔒 Dalga & Akıntı: <b style="color:var(--a)">Usta+</b>
+        </div>
+      </div>
+      <iframe id="windy-iframe"
+        src="https://embed.windy.com/embed2.html?lat=40.395&lon=26.68&detailLat=40.395&detailLon=26.68&width=650&height=400&zoom=8&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1"
+        frameborder="0"
+        allowfullscreen>
+      </iframe>
+    </div>
+
     <!-- 7-day -->
     <div class="wx7">
       <div class="seabar-title" style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--td);margin-bottom:8px">7 GÜNLÜK TAHMİN</div>
@@ -686,6 +865,22 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
 <div class="pg" id="admin-pg">
   <div class="admc">
     <div class="admh">⚠ YÖNETİM PANELİ</div>
+
+    <!-- Firebase Auth Giriş Kutusu (giriş yapılmadıysa görünür) -->
+    <div class="adm-auth-box" id="adm-auth-box">
+      <div class="adm-auth-title">🔑 ADMİN GİRİŞİ (Firebase Auth)</div>
+      <div class="ir"><div class="il">E-posta</div><input class="ri" id="adm-fb-email" type="email" placeholder="admin@balikciradari.com.tr"></div>
+      <div class="ir"><div class="il">Şifre</div><input class="ri" id="adm-fb-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')admFirebaseLogin()"></div>
+      <button class="btn o" onclick="admFirebaseLogin()" style="margin-top:6px">🔑 GİRİŞ YAP</button>
+    </div>
+
+    <!-- Admin Ana İçerik (giriş yapılınca görünür) -->
+    <div id="adm-main-content" style="display:none">
+      <div style="font-size:10px;color:var(--a2);font-family:'Share Tech Mono',monospace;margin-bottom:12px">
+        ✅ Giriş: <span id="adm-auth-email"></span>
+        <button class="btn r sm" onclick="admFirebaseLogout()" style="margin-left:8px">Çıkış</button>
+      </div>
+
     <div class="adgr" id="admst"></div>
     <div class="adsec"><div class="adst">KULLANICI YÖNETİMİ</div><div id="admu"></div></div>
     <div class="adsec"><div class="adst">NOT / GÜNLÜK YÖNETİMİ</div><div id="admn"></div></div>
@@ -694,106 +889,52 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
       <div style="font-size:9px;color:var(--td);margin-bottom:8px">Son 30 mesaj — 🗑️ butonuyla sil, tüm cihazlardan kalkar</div>
       <div id="admc"><div style="color:var(--td);font-size:10px">Yükleniyor...</div></div>
     </div>
+    <!-- MERA YÖNETİMİ (admin) -->
+    <div class="adsec">
+      <div class="adst">⚓ MERA YÖNETİMİ (Firebase)</div>
+      <div id="adm-spots-list" style="margin-bottom:10px"></div>
+      <div style="font-size:9px;color:var(--td);margin-bottom:8px;font-weight:700">YENİ MERA EKLE</div>
+      <div class="spot-form-grid">
+        <div class="ir"><div class="il">Mera Adı</div><input class="ri" id="sp-name" placeholder="Nara Burnu"></div>
+        <div class="ir"><div class="il">Bölge</div>
+          <select class="rs" id="sp-region">
+            <option value="Marmara">Marmara</option>
+            <option value="Karadeniz">Karadeniz</option>
+            <option value="Ege">Ege</option>
+            <option value="Akdeniz">Akdeniz</option>
+            <option value="Çanakkale">Çanakkale</option>
+          </select>
+        </div>
+        <div class="ir"><div class="il">Enlem (lat)</div><input class="ri" id="sp-lat" placeholder="40.2211" type="number" step="0.0001"></div>
+        <div class="ir"><div class="il">Boylam (lng)</div><input class="ri" id="sp-lng" placeholder="26.3789" type="number" step="0.0001"></div>
+        <div class="ir"><div class="il">Verimlilik (1-10)</div><input class="ri" id="sp-eff" placeholder="8" type="number" min="1" max="10"></div>
+        <div class="ir"><div class="il">Zemin</div>
+          <select class="rs" id="sp-ground">
+            <option value="kayalik">Kayalık</option>
+            <option value="kumlu">Kumlu</option>
+            <option value="derin">Derin Su</option>
+            <option value="sazlik">Sazlık</option>
+            <option value="karisik">Karışık</option>
+          </select>
+        </div>
+      </div>
+      <div class="ir"><div class="il">Hedef Balıklar (virgülle)</div><input class="ri" id="sp-fish" placeholder="Lüfer, Çipura, Levrek"></div>
+      <div class="ir"><div class="il">Açıklama</div><input class="ri" id="sp-desc" placeholder="Akıntılı kayalık, tüm mevsim aktif"></div>
+      <button class="btn g" onclick="admAddSpot()" style="margin-top:4px">➕ MERAYA EKLE (Firebase)</button>
+    </div>
+
+    <!-- DUYURU -->
     <div class="adsec">
       <div class="adst">DUYURU GÖNDER</div>
       <div style="display:flex;gap:7px">
         <input class="ri" id="adann" placeholder="Tüm kaptanlara duyuru..." style="flex:1">
         <button class="btn o sm" onclick="admAnn()">📢 GÖNDER</button>
       </div>
-    </div>
+    </div><!-- /adm-main-content -->
   </div>
 </div>
 
-<!-- ─── DATA SOURCES PAGE ─── -->
-<div class="pg" id="src-pg">
-  <div class="srch">📊 VERİ KAYNAKLARI & DOĞRULUK</div>
 
-  <div class="warn-box">
-    <strong>⚠ Önemli Uyarı:</strong> Bu uygulama gerçek zamanlı hava durumu verisini açık API'lerden çekmektedir. Ancak balık tahmin algoritması; bilimsel literatür, balıkçılık rehberleri ve deneyimsel kurallara dayalı <strong>istatistiksel bir model</strong>dir. Gerçek av sonuçları farklılık gösterebilir. Ticari kararlar için profesyonel danışmanlık alın.
-  </div>
-
-  <div class="srcsec">
-    <h3>CANLI VERİ KAYNAKLARI</h3>
-    <div class="src-item">
-      <div class="src-name">Open-Meteo API</div>
-      <div class="src-url">api.open-meteo.com</div>
-      <div class="src-desc">Anlık hava durumu: rüzgar hızı & yönü, hava sıcaklığı, atmosfer basıncı, dalga yüksekliği. Avrupa meteoroloji modellerine (ECMWF, GFS) dayalı, saatlik güncelleme. Tamamen ücretsiz ve açık kaynaklı.</div>
-      <span class="src-badge sb-free">ÜCRETSİZ</span><span class="src-badge sb-live">CANLI</span><span class="src-badge sb-open">AÇIK KAYNAK</span>
-    </div>
-    <div class="src-item">
-      <div class="src-name">Nominatim / OpenStreetMap</div>
-      <div class="src-url">nominatim.openstreetmap.org</div>
-      <div class="src-desc">Harita üzerinde tıklanan koordinatları il, ilçe ve mahalle isimlerine çevirmek için kullanılır (ters coğrafi kodlama). OSM topluluğu tarafından sürdürülür.</div>
-      <span class="src-badge sb-free">ÜCRETSİZ</span><span class="src-badge sb-open">AÇIK KAYNAK</span>
-    </div>
-    <div class="src-item">
-      <div class="src-name">Esri World Imagery (Uydu)</div>
-      <div class="src-url">server.arcgisonline.com</div>
-      <div class="src-desc">Uydu görüntü katmanı. Kıyı yapısı, sığlıklar ve dip morfolojisini görsel olarak değerlendirmeye yardımcı olur.</div>
-      <span class="src-badge sb-free">ÜCRETSİZ</span>
-    </div>
-    <div class="src-item">
-      <div class="src-name">CartoDB Dark Labels</div>
-      <div class="src-url">basemaps.cartocdn.com</div>
-      <div class="src-desc">Uydu görüntüsü üzerindeki il, ilçe, mahalle ve kıyı adı etiketleri. Gece moduna uygun koyu arka planlı etiket katmanı.</div>
-      <span class="src-badge sb-free">ÜCRETSİZ</span>
-    </div>
-    <div class="src-item">
-      <div class="src-name">Tarayıcı Geolocation API</div>
-      <div class="src-url">navigator.geolocation (W3C standart)</div>
-      <div class="src-desc">Kullanıcının GPS, WiFi veya hücre ağı üzerinden anlık konumunu alır. Hassasiyet ortama göre değişir: GPS açıkta ~5m, kapalı alanda ~100m. Konum hiçbir zaman sunucuya gönderilmez, yalnızca tarayıcıda işlenir.</div>
-      <span class="src-badge sb-live">CANLI GPS</span><span class="src-badge sb-free">GİZLİLİK KORUMAL</span>
-    </div>
-  </div>
-
-  <div class="srcsec">
-    <h3>TAHMİN ALGORİTMASI KAYNAKLARI</h3>
-    <div class="src-item">
-      <div class="src-name">Balık Davranış Modeli</div>
-      <div class="src-desc">Tahmin motoru aşağıdaki bilimsel ve pratik kaynaklara dayanmaktadır:<br><br>
-        <b style="color:var(--a)">• Su Sıcaklığı Korelasyonu:</b> Her tür için FAO (BM Gıda ve Tarım Örgütü) balıkçılık veri tabanındaki optimum sıcaklık aralıkları kullanılmıştır.<br><br>
-        <b style="color:var(--a)">• Rüzgar/Akıntı Etkisi:</b> Türkiye Denizcilik ve Haberleşme Bakanlığı kılavuz yayınları ile Türk balıkçılık rehberleri (Balik.com.tr literatürü) referans alınmıştır.<br><br>
-        <b style="color:var(--a)">• Mevsimsellik:</b> TÜİK (Türkiye İstatistik Kurumu) deniz avı istatistikleri ve Su Ürünleri Kanunu av yasakları takvimi baz alınmıştır.<br><br>
-        <b style="color:var(--a)">• Zemin Tercihi:</b> İTÜ Deniz Bilimleri Enstitüsü ve Ege Üniversitesi Su Ürünleri Fakültesi araştırmalarından derlenen habitat verileri kullanılmıştır.
-      </div>
-      <span class="src-badge sb-est">İSTATİSTİKSEL MODEL</span><span class="src-badge sb-est">UZMAN DERLEMESI</span>
-    </div>
-    <div class="src-item">
-      <div class="src-name">Kıyı Noktaları Veritabanı</div>
-      <div class="src-desc">30+ kıyı noktası; coğrafi koordinatlar OpenStreetMap'ten, zemin ve habitat tipi verileri ise Türkiye kıyı haritaları ile balıkçılık forumlarından (Balikavci.net, Spincast.org) derlenmiştir. Koordinatlar Google Maps ile karşılaştırılarak doğrulanmıştır.</div>
-      <span class="src-badge sb-open">OSM KOORDINAT</span><span class="src-badge sb-est">FORUM DERLEMESI</span>
-    </div>
-  </div>
-
-  <div class="srcsec">
-    <h3>DOĞRULUĞU NASIL DEĞERLENDİREBİLİRSİNİZ?</h3>
-    <div class="src-item">
-      <div class="src-name">✅ Güvenilir Veriler</div>
-      <div class="src-desc">
-        <b style="color:var(--a2)">Hava durumu (rüzgar, basınç):</b> ECMWF/GFS modellerinden alınan gerçek zamanlı veri. Doğruluk oranı %90+.<br><br>
-        <b style="color:var(--a2)">Harita konumu:</b> GPS koordinatları W3C standardında, OpenStreetMap isimlendirmesi topluluk doğrulamalı.<br><br>
-        <b style="color:var(--a2)">Mesafe hesabı:</b> Haversine formülü ile hassas küresel mesafe hesabı.
-      </div>
-    </div>
-    <div class="src-item">
-      <div class="src-name">⚠️ Tahminsel Veriler</div>
-      <div class="src-desc">
-        <b style="color:var(--w)">Balık olasılığı (%):</b> Kural tabanlı sezgisel model. Gerçek av şansını değil, koşulların o tür için uygunluk derecesini gösterir.<br><br>
-        <b style="color:var(--w)">Su sıcaklığı:</b> Hava sıcaklığından tahmin edilir (−2°C). Gerçek deniz yüzeyi sıcaklığı için CMEMS/Copernicus servisleri kullanılabilir.<br><br>
-        <b style="color:var(--w)">Zemin tipi:</b> Kullanıcı tarafından manuel seçilir; otomatik batimetri veri entegrasyonu henüz mevcut değildir.
-      </div>
-    </div>
-    <div class="src-item">
-      <div class="src-name">📡 Uygulamayı Daha Doğru Kullanmak İçin</div>
-      <div class="src-desc">
-        1. Gerçek su sıcaklığını balık termometresiyle ölçüp manuel girin.<br>
-        2. Bulunduğunuz zemin tipini (kayalık/kumlu vb.) elle seçin.<br>
-        3. Topluluk notlarını okuyun — diğer kaptanların gerçek gözlemleri en değerli veridir.<br>
-        4. Tahminleri yalnızca yönlendirici olarak kullanın, nihai karar tecrübenize aittir.
-      </div>
-    </div>
-  </div>
-</div>
 
 </div><!-- /#main -->
 
@@ -810,6 +951,85 @@ const K1='br_notes_v5',K2='br_users_v5',K3='br_sess_v5',K4='br_chat_v5';
 function lg(k){try{return JSON.parse(localStorage.getItem(k));}catch{return null;}}
 function ls(k,v){localStorage.setItem(k,JSON.stringify(v));}
 
+
+// ══════════════════════════════════════════════════════
+// ROL / RÜTBE SİSTEMİ
+// Hiyerarşi: amator(0) < usta(1) < reis(2) < admin(3)
+// ══════════════════════════════════════════════════════
+const ROLES = {
+  amator: { level: 0, label: 'Çırak',      emoji: '🎣',  color: '#4a7a9b' },
+  usta:   { level: 1, label: 'Usta',       emoji: '⚓',  color: '#00c8ff' },
+  reis:   { level: 2, label: 'Reis',       emoji: '🧭',  color: '#ffaa00' },
+  admin:  { level: 3, label: 'Kaptan',     emoji: '👑',  color: '#ff6b35' },
+};
+
+/** Rol seviyesini sayıya çevirir */
+function roleLevel(role){ return ROLES[role]?.level ?? 0; }
+
+/** Giriş yapan kullanıcının rolü bu seviyeye ulaşıyor mu? */
+function hasRole(minRole){
+  if(!CU) return false;
+  return roleLevel(CU.role) >= roleLevel(minRole);
+}
+
+/** Rol badge HTML'i */
+function roleBadge(role){
+  const r = ROLES[role] || ROLES.amator;
+  return `<span style="font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(0,0,0,.4);color:${r.color};border:1px solid ${r.color}40">${r.emoji} ${r.label}</span>`;
+}
+
+/**
+ * Rol bazlı UI güncellemesi — her login/logout sonrası çağrılır.
+ * CSS class'ları body'e ekler, CSS ile gizle/göster yapılır.
+ */
+function applyRoleUI(){
+  const body = document.body;
+  // Önce hepsini kaldır
+  body.classList.remove('role-amator','role-usta','role-reis','role-admin','logged-in','logged-out');
+
+  if(CU){
+    body.classList.add('logged-in');
+    body.classList.add('role-' + (CU.role || 'amator'));
+    // Admin butonu
+    const admBtn = document.getElementById('admBtn');
+    if(admBtn) admBtn.style.display = CU.role === 'admin' ? 'inline-block' : 'none';
+    // Kaptan adı + rozet
+    const captEl = document.getElementById('captname');
+    if(captEl){
+      const r = ROLES[CU.role] || ROLES.amator;
+      captEl.textContent = `${r.emoji} ${CU.nm}`;
+      captEl.style.color = r.color;
+    }
+    // Mob menü admin butonu
+    const mnAdm = document.getElementById('mn-adm');
+    if(mnAdm) mnAdm.style.display = CU.role === 'admin' ? '' : 'none';
+  } else {
+    body.classList.add('logged-out');
+    const admBtn = document.getElementById('admBtn');
+    if(admBtn) admBtn.style.display = 'none';
+    const captEl = document.getElementById('captname');
+    if(captEl){ captEl.textContent = 'GİRİŞ YAP'; captEl.style.color = ''; }
+  }
+
+  // Windy gelişmiş katmanlar: sadece usta+
+  const windyAdv = document.getElementById('windy-adv-layers');
+  if(windyAdv) windyAdv.style.display = hasRole('usta') ? 'flex' : 'none';
+
+  // Nokta tavsiyesi detayı: usta+
+  const sprecEl = document.getElementById('sprecs');
+  if(sprecEl) sprecEl.style.opacity = hasRole('usta') ? '1' : '0.4';
+
+  const spLock = document.getElementById('sprecs-lock');
+  if(spLock) spLock.style.display = hasRole('usta') ? 'none' : 'block';
+
+  // Chat girişi: sadece giriş yapmış kullanıcılar
+  const chInp = document.getElementById('chia');
+  if(chInp) chInp.style.display = CU ? 'flex' : 'none';
+
+  // recalc — tahminler rol bazlı güncellenir
+  if(typeof recalc === 'function') recalc();
+}
+
 // ══════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════
@@ -817,6 +1037,14 @@ let mapO,satL,strL;
 let nmMode=false,nmMks=[],notes=[],users=[],chat=[];
 let CU=null,pendC=null,wdata={};
 let myLat=null,myLng=null,locMk=null;
+
+// ── Yeni: Meralar, mod ve katsayılar ──
+let popularSpots = [];          // Firebase'den çekilen meralar
+let activeSpot   = null;        // Seçili mera objesi
+let fishMode     = 'shore';     // 'shore' | 'boat'
+let regionMult   = {};          // Firebase'den çekilen bölge çarpanları
+let seasonMult   = {};          // Firebase'den çekilen mevsim çarpanları
+let authUser     = null;        // Firebase Auth kullanıcısı (admin)
 
 // ══════════════════════════════════════════════════════
 // BOOT
@@ -826,7 +1054,7 @@ function loadAll(){
   chat=lg(K4)||[];
   users=lg(K2)||[];
   if(!users.find(u=>u.un==='AyazEr'))
-    users.push({un:'AyazEr',pw:'AyAzEr1912SA',nm:'Kaptan Admin',role:'admin',region:'Merkez',banned:false,joined:Date.now()});
+    // Admin kullanici Firebase Auth + Realtime DB'de yonetilir (hardcoded sifre yok)
   ls(K2,users);
   const s=lg(K3);
   if(s){CU=users.find(u=>u.un===s)||null;}
@@ -835,17 +1063,50 @@ function loadAll(){
 // MAP
 // ══════════════════════════════════════════════════════
 function initMap(){
-  mapO=L.map('map',{zoomControl:true}).setView([40.395,26.68],9);
-  satL=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
-  strL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
-  const lblL=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{maxZoom:19,pane:'shadowPane'});
-  satL.addTo(mapO);lblL.addTo(mapO);
-  mapO.on('click',e=>{
-    if(nmMode){pendC=e.latlng;shNM(e.latlng);}
-    else{shAnalysis(e.latlng);}
+  // Türkiye + karasuları sınırı (güneybatı–kuzeydoğu)
+  const TR_BOUNDS = L.latLngBounds(
+    L.latLng(33.5, 23.5),   // GB: Ege/Akdeniz karasuları
+    L.latLng(43.5, 46.5)    // KD: Karadeniz karasuları
+  );
+
+  mapO = L.map('map', {
+    zoomControl: true,
+    minZoom: 5,
+    maxZoom: 19,
+    maxBounds: TR_BOUNDS,
+    maxBoundsViscosity: 1.0
+  }).setView([38.9, 35.2], 6); // Türkiye tam merkez
+
+  satL = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:19}
+  );
+  strL = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19}
+  );
+  const lblL = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+    {maxZoom:19, pane:'shadowPane'}
+  );
+  satL.addTo(mapO);
+  lblL.addTo(mapO);
+
+  mapO.on('click', e => {
+    if(nmMode){ pendC=e.latlng; shNM(e.latlng); }
+    else{ shAnalysis(e.latlng); }
   });
+
+  // Sınır dışına çıkılırsa geri çek
+  mapO.on('moveend', () => {
+    if(!mapO.getBounds().intersects(TR_BOUNDS)){
+      mapO.panInsideBounds(TR_BOUNDS, {animate:true});
+    }
+  });
+
   // Harita boyutu garantisi
-  for(const ms of [50,150,300,600,1200,2000])setTimeout(()=>mapO&&mapO.invalidateSize(true),ms);
+  for(const ms of [50,150,300,600,1200,2000])
+    setTimeout(()=>mapO&&mapO.invalidateSize(true), ms);
 }
 
 function setLyr(t,btn){
@@ -854,7 +1115,15 @@ function setLyr(t,btn){
   if(t==='sat'){mapO.removeLayer(strL);satL.addTo(mapO);}
   else{mapO.removeLayer(satL);strL.addTo(mapO);}
 }
-function fly(la,ln,z){mapO.flyTo([la,ln],z,{duration:1.2});}
+function fly(la,ln,z){
+  const lat=parseFloat(la), lng=parseFloat(ln);
+  // Türkiye sınırları içindeyse uç
+  if(lat>=33.5&&lat<=43.5&&lng>=23.5&&lng<=46.5){
+    mapO.flyTo([lat,lng],z||9,{duration:1.2});
+  } else {
+    mapO.flyTo([38.9,35.2],6,{duration:1.0}); // Türkiye merkezi
+  }
+}
 
 // ══════════════════════════════════════════════════════
 // GEOLOCATION — robust implementation
@@ -910,8 +1179,8 @@ function locateMe(){
 
       // Fetch weather for user location
       fetchWForCoord(myLat,myLng);
-      // Find nearby spots
-      findNearby(myLat,myLng);
+      // Yakın meraları konuma göre sırala + bul
+      _sortSpotsByLocation(myLat, myLng);
     },
     function onError(err){
       btn.textContent='📡 KONUMUMU BUL';
@@ -1067,6 +1336,57 @@ function deg2nm(d){
 function setWDS(nm){const s=document.getElementById('wdsel');if(DMAP[nm])s.value=DMAP[nm];}
 
 // ══════════════════════════════════════════════════════
+// BÖLGESEL ÇARPANLAR — Varsayılan (Firebase'den üzerine yazılır)
+// Formül: Final% = BaseScore × regionMult × seasonMult
+// ══════════════════════════════════════════════════════
+const DEFAULT_REGION_MULT = {
+  // fishId: { Karadeniz, Marmara, Ege, Akdeniz, Çanakkale }
+  lufer:    { Karadeniz:1.3, Marmara:1.2, Ege:0.9, Akdeniz:0.5, Çanakkale:1.4 },
+  palamut:  { Karadeniz:1.3, Marmara:1.1, Ege:0.8, Akdeniz:0.6, Çanakkale:1.2 },
+  hamsi:    { Karadeniz:1.5, Marmara:1.0, Ege:0.7, Akdeniz:0.4, Çanakkale:1.1 },
+  esgina:   { Karadeniz:1.2, Marmara:1.0, Ege:0.9, Akdeniz:0.4, Çanakkale:1.1 },
+  cipura:   { Karadeniz:0.6, Marmara:1.0, Ege:1.3, Akdeniz:1.4, Çanakkale:1.0 },
+  levrek:   { Karadeniz:0.9, Marmara:1.1, Ege:1.2, Akdeniz:1.2, Çanakkale:1.1 },
+  sinagrit: { Karadeniz:0.3, Marmara:0.6, Ege:1.3, Akdeniz:1.5, Çanakkale:0.7 },
+  mercan:   { Karadeniz:0.3, Marmara:0.7, Ege:1.2, Akdeniz:1.4, Çanakkale:0.8 },
+  kalamar:  { Karadeniz:0.8, Marmara:1.1, Ege:1.2, Akdeniz:1.1, Çanakkale:1.0 },
+  kolyoz:   { Karadeniz:0.7, Marmara:1.0, Ege:1.2, Akdeniz:1.3, Çanakkale:1.0 },
+  _default: { Karadeniz:1.0, Marmara:1.0, Ege:1.0, Akdeniz:1.0, Çanakkale:1.0 },
+};
+
+const DEFAULT_SEASON_MULT = {
+  // fishId: [Oca,Şub,Mar,Nis,May,Haz,Tem,Ağu,Eyl,Eki,Kas,Ara]
+  lufer:    [0.7,0.6,0.5,0.5,0.4,0.4,0.5,0.7,1.0,1.3,1.4,1.1],
+  palamut:  [0.5,0.4,0.5,0.6,0.6,0.5,0.6,0.8,1.4,1.5,1.2,0.7],
+  hamsi:    [1.2,1.0,0.7,0.5,0.4,0.3,0.4,0.6,1.0,1.4,1.5,1.3],
+  cipura:   [0.6,0.6,0.8,1.0,1.2,1.3,1.2,1.1,1.0,0.9,0.7,0.6],
+  levrek:   [0.8,0.8,1.0,1.1,1.2,1.1,1.0,1.0,1.1,1.1,1.0,0.9],
+  kalamar:  [1.2,1.2,0.8,0.7,0.6,0.6,0.7,0.8,1.0,1.2,1.3,1.3],
+  _default: [1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],
+};
+
+/**
+ * Bölge çarpanını döndürür.
+ * Önce Firebase'den çekilen regionMult'a bakar, yoksa DEFAULT kullanır.
+ */
+function getRegionMult(fishId) {
+  const region = activeSpot?.region || 'Marmara';
+  const src = (regionMult && regionMult[fishId]) ? regionMult : DEFAULT_REGION_MULT;
+  const row = src[fishId] || src['_default'] || {};
+  return row[region] ?? 1.0;
+}
+
+/**
+ * Mevsim çarpanını döndürür (şu anki ay).
+ */
+function getSeasonMult(fishId) {
+  const mo = new Date().getMonth(); // 0–11
+  const src = (seasonMult && seasonMult[fishId]) ? seasonMult : DEFAULT_SEASON_MULT;
+  const arr = src[fishId] || src['_default'] || Array(12).fill(1.0);
+  return arr[mo] ?? 1.0;
+}
+
+// ══════════════════════════════════════════════════════
 // FISH DB — 35 Turkish species
 // ══════════════════════════════════════════════════════
 const FDB=[
@@ -1219,11 +1539,40 @@ const SPOTS={
 
 function cl(v){return Math.min(Math.max(Math.round(v),0),95);}
 
+/**
+ * Dinamik final skor hesapla:
+ * Final% = clamp( BaseScore × regionMult × seasonMult )
+ */
+function dynScore(baseScore, fishId) {
+  const rm = getRegionMult(fishId);
+  const sm = getSeasonMult(fishId);
+  return cl(Math.round(baseScore * rm * sm));
+}
+
 function recalc(){
   const w=document.getElementById('wdsel').value;
   const t=parseFloat(document.getElementById('wtemp').value)||16;
-  const g=document.getElementById('gtype').value;
-  const res=FDB.map(f=>({...f,prob:f.r(w,t,g),tip:f.h(w,t)})).sort((a,b)=>b.prob-a.prob);
+  // Zemin: aktif mera varsa onun zeminini kullan
+  const g = activeSpot?.ground || document.getElementById('gtype').value;
+
+  // fishMode filtresi:
+  // 'shore' → Kıyı balıkları önce (levrek, çipura, karagöz, tekir…)
+  // 'boat'  → Açık deniz / derin balıklar önce (sinarit, mercan, palamut…)
+  const SHORE_IDS = new Set(['levrek','cipura','karagoz','tekir','kefal','barbun','lipsoz','iskarmoz','izmarit','altinbas','iskorpit','kirlangiç','zargana']);
+  const BOAT_IDS  = new Set(['lufer','palamut','torik','sinagrit','mercan','orfoz','sarikanat','esgina','kalamar','supya','kalkan','pisi']);
+
+  const res = FDB
+    .map(f => {
+      const base = f.r(w,t,g);
+      // Dinamik skor: base × bölge çarpanı × mevsim çarpanı
+      const prob = dynScore(base, f.id);
+      // fishMode ağırlığı: uygun mod için +0, diğer mod için %70'e indir
+      let displayProb = prob;
+      if(fishMode==='shore' && BOAT_IDS.has(f.id))  displayProb = Math.round(prob * 0.7);
+      if(fishMode==='boat'  && SHORE_IDS.has(f.id)) displayProb = Math.round(prob * 0.7);
+      return {...f, prob: displayProb, tip: f.h(w,t)};
+    })
+    .sort((a,b) => b.prob - a.prob);
   const con=document.getElementById('fpreds');
   con.innerHTML='';
   res.forEach(f=>{
@@ -1354,62 +1703,228 @@ function swAuth(t){
 }
 
 function doLogin(){
-  const u=document.getElementById('liu').value.trim();
-  const p=document.getElementById('lip').value;
-  const err=document.getElementById('lerr');
-  const f=users.find(x=>x.un===u&&x.pw===p);
-  if(!f){err.textContent='Kullanıcı adı veya şifre hatalı.';err.classList.add('on');return;}
-  if(f.banned){err.textContent='Bu hesap yasaklandı.';err.classList.add('on');return;}
-  err.classList.remove('on');
-  loginUser(f);
+  const usernameOrEmail = document.getElementById('liu').value.trim();
+  const pass  = document.getElementById('lip').value;
+  const err   = document.getElementById('lerr');
+
+  if(!usernameOrEmail || !pass){
+    err.textContent='Kullanici adi ve sifre gerekli.';
+    err.classList.add('on');return;
+  }
+
+  // --- Firebase yoksa yerel fallback ---
+  if(!window.firebase || !firebase.auth){
+    const f = users.find(x =>
+      (x.un===usernameOrEmail || x.email===usernameOrEmail) && x.pw===pass
+    );
+    if(!f){err.textContent='Hesap bulunamadi.';err.classList.add('on');return;}
+    if(f.banned){err.textContent='Bu hesap yasaklandi.';err.classList.add('on');return;}
+    err.classList.remove('on');loginUser(f);return;
+  }
+
+  err.textContent='Giris yapiliyor...';err.classList.add('on');err.style.color='var(--a)';
+
+  // E-posta gibi görünüyorsa doğrudan dene, yoksa username→email çözümü yap
+  const isEmail = usernameOrEmail.includes('@');
+  if(isEmail){
+    _doFirebaseLogin(usernameOrEmail, pass, err);
+  } else {
+    // Firebase'de 'usernames/<username>' node'undan email'i çek
+    if(!fbReady || !db){
+      err.textContent='Firebase baglantisiniz yok.';err.style.color='var(--r)';err.classList.add('on');return;
+    }
+    db.ref('usernames/' + usernameOrEmail).once('value')
+      .then(snap => {
+        if(!snap.exists()){
+          err.textContent='Kullanici adi bulunamadi.';
+          err.style.color='var(--r)';err.classList.add('on');return;
+        }
+        const email = snap.val().email;
+        _doFirebaseLogin(email, pass, err);
+      })
+      .catch(e => {
+        err.textContent='Arama hatasi: '+e.message;
+        err.style.color='var(--r)';err.classList.add('on');
+      });
+  }
+}
+
+function _doFirebaseLogin(email, pass, err){
+  firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(cred => {
+      err.classList.remove('on');err.style.color='';
+      fetchUserProfile(cred.user.uid, cred.user.email);
+    })
+    .catch(e => {
+      err.style.color='var(--r)';
+      err.textContent =
+        (e.code==='auth/user-not-found'||e.code==='auth/invalid-credential') ? 'Kullanici adi veya sifre hatali.' :
+        e.code==='auth/wrong-password' ? 'Sifre hatali.' :
+        e.code==='auth/too-many-requests' ? 'Cok fazla deneme. Lutfen bekleyin.' :
+        'Giris hatasi: ' + e.message;
+      err.classList.add('on');
+    });
+}
+
+function showForgotPass(){
+  const val = document.getElementById('liu').value.trim();
+  if(!val){alert('Kullanici adinizi veya e-postanizi girin.');return;}
+  if(!window.firebase||!firebase.auth){alert('Firebase Auth gerekli.');return;}
+
+  const sendReset = (email) => {
+    firebase.auth().sendPasswordResetEmail(email)
+      .then(()=>alert('Sifre sifirlama e-postasi gonderildi.'))
+      .catch(e=>alert('Hata: '+e.message));
+  };
+
+  if(val.includes('@')){
+    sendReset(val);
+  } else if(fbReady && db){
+    db.ref('usernames/'+val).once('value').then(snap=>{
+      if(snap.exists()) sendReset(snap.val().email);
+      else alert('Kullanici adi bulunamadi.');
+    });
+  } else {
+    alert('Firebase baglantisi gerekli.');
+  }
+}
+
+/** Firebase Auth uid'den kullanıcı profilini Realtime DB'den çeker */
+function fetchUserProfile(uid, email){
+  if(!fbReady||!db){ loginUser({un:email,nm:email,role:'amator',region:'—',email}); return; }
+  db.ref('users/'+uid).once('value').then(snap=>{
+    if(snap.exists()){
+      const u = snap.val();
+      loginUser({...u, uid, email, pw:''});
+    } else {
+      // İlk giriş — profil oluştur
+      const nu = {uid, email, un:email.split('@')[0], nm:email.split('@')[0], role:'amator', region:'Belirtilmedi', fishType:'shore', banned:false, joined:Date.now()};
+      db.ref('users/'+uid).set(nu);
+      loginUser({...nu, pw:''});
+    }
+  });
+}
+
+let regFishType = 'shore';
+function setRegFishType(type, btn){
+  regFishType = type;
+  document.getElementById('ft-shore').classList.toggle('on',   type==='shore');
+  document.getElementById('ft-boat').classList.toggle('on',    type==='boat');
 }
 
 function doReg(){
-  const nm=document.getElementById('rnm').value.trim();
-  const u=document.getElementById('ruu').value.trim();
-  const p=document.getElementById('rup').value;
-  const rg=document.getElementById('rrg').value.trim();
-  const err=document.getElementById('rerr');
-  if(!nm||!u||!p){err.textContent='Tüm alanları doldurun.';err.classList.add('on');return;}
-  if(p.length<6){err.textContent='Şifre en az 6 karakter.';err.classList.add('on');return;}
-  if(users.find(x=>x.un===u)){err.textContent='Bu kullanıcı adı alınmış.';err.classList.add('on');return;}
+  const nm    = document.getElementById('rnm').value.trim();
+  const email = document.getElementById('remail').value.trim();
+  const un    = document.getElementById('ruu').value.trim();
+  const pass  = document.getElementById('rup').value;
+  const rg    = document.getElementById('rrg').value.trim();
+  const err   = document.getElementById('rerr');
+
+  if(!nm||!email||!un||!pass){err.textContent='Tüm alanları doldurun.';err.classList.add('on');return;}
+  if(pass.length<6){err.textContent='Şifre en az 6 karakter.';err.classList.add('on');return;}
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){err.textContent='Geçerli bir e-posta girin.';err.classList.add('on');return;}
   err.classList.remove('on');
-  const nu={un:u,pw:p,nm,role:'user',region:rg||'Belirtilmedi',banned:false,joined:Date.now()};
-  users.push(nu);ls(K2,users);
-  loginUser(nu);
+
+  if(!window.firebase||!firebase.auth){
+    // Firebase yoksa yerel kayıt
+    if(users.find(x=>x.un===un)){err.textContent='Bu kullanıcı adı alınmış.';err.classList.add('on');return;}
+    const nu={un,pw:pass,nm,email,role:'amator',region:rg||'Belirtilmedi',fishType:regFishType, userMode:regFishType,banned:false,joined:Date.now()};
+    users.push(nu);ls(K2,users);loginUser(nu);return;
+  }
+
+  err.textContent='Kullanici adi kontrol ediliyor...';err.classList.add('on');err.style.color='var(--a)';
+
+  // Kullanici adinin bos olup olmadigini kontrol et
+  const checkAndRegister = () => {
+    firebase.auth().createUserWithEmailAndPassword(email, pass)
+    .then(cred=>{
+      const uid = cred.user.uid;
+      const nu = {uid, email, un, nm, role:'amator', region:rg||'Belirtilmedi', fishType:regFishType, banned:false, joined:Date.now()};
+      // Firebase'e kaydet
+      if(fbReady&&db){
+        // Kullanici profilini kaydet
+        db.ref('users/'+uid).set(nu);
+        // Username → email esleme tablosu (giris icin)
+        db.ref('usernames/'+un).set({email, uid, nm, joined:nu.joined});
+      }
+      loginUser({...nu, pw:''});
+      err.classList.remove('on');err.style.color='';
+    })
+    .catch(e=>{
+      err.style.color='var(--r)';
+      err.textContent = e.code==='auth/email-already-in-use'? 'Bu e-posta zaten kayitli.' :
+                        e.code==='auth/invalid-email'?        'Gecersiz e-posta.' :
+                        e.code==='auth/weak-password'?        'Sifre cok zayif.' :
+                        'Kayit hatasi: '+e.message;
+      err.classList.add('on');
+    });
+  }; // checkAndRegister sonu
+
+  if(fbReady && db){
+    db.ref('usernames/' + un).once('value').then(snap => {
+      if(snap.exists()){
+        err.textContent='Bu kullanici adi zaten alinmis.';
+        err.style.color='var(--r)';err.classList.add('on');return;
+      }
+      checkAndRegister();
+    }).catch(()=>checkAndRegister());
+  } else {
+    checkAndRegister();
+  }
 }
 
-function loginUser(u){
-  CU=u;ls(K3,u.un);
-  document.getElementById('captname').textContent=u.nm;
-  // Show admin button if admin
-  if(u.role==='admin'){
-    document.getElementById('admBtn').style.display='';
-    document.getElementById('admBtn').style.removeProperty('display');
-    document.getElementById('admBtn').style.display='inline-block';
-  }
-  addCSys(`${u.nm} Kamışını aldı geldi  ⚓`);
-  goPg('map-pg',document.querySelector('.ntab'));
-}
+// loginUser: bkz window.loginUser (asagida)
 
 function logout(){
-  CU=null;ls(K3,null);
-  document.getElementById('captname').textContent='GİRİŞ YAP';
-  document.getElementById('admBtn').style.display='none';
+  CU = null; ls(K3, null);
+  // Firebase Auth çıkış
+  if(window.firebase && firebase.auth) firebase.auth().signOut().catch(()=>{});
+  // Rol rozeti gizle
+  const roleEl = document.getElementById('role-badge-hdr');
+  if(roleEl) roleEl.style.display = 'none';
+  applyRoleUI();
   hidM();
-  goPg('map-pg',document.querySelector('.ntab'));
+  goPg('map-pg', document.querySelector('.ntab'));
 }
 
 function shUMenu(){
-  const nc=notes.filter(n=>n.cap===CU.nm).length;
+  const nc  = notes.filter(n=>n.cap===CU.nm).length;
+  const r   = ROLES[CU.role] || ROLES.amator;
+  const ft  = CU.fishType === 'boat' ? '⛵ Tekne' : '🏖 Kıyı';
+
+  // Rol ayrıcalıkları
+  const perks = {
+    amator: ['Temel balık tahminleri','Harita notları','Topluluk sohbeti'],
+    usta:   ['Temel balık tahminleri','Harita notları','Topluluk sohbeti','Windy dalga ve akıntı katmanları','Detaylı nokta tavsiyeleri'],
+    reis:   ['Tüm Usta özellikleri','Sohbet moderasyonu','Gelişmiş analiz'],
+    admin:  ['Tüm yetkiler','Admin paneli','Mera ve katsayı yönetimi','Kullanıcı rol ataması'],
+  };
+  const myPerks = perks[CU.role] || perks.amator;
+
   showM(`<h2>👤 HESABIM</h2>
     <div style="background:var(--panel);border:1px solid var(--b);border-radius:4px;padding:11px;margin-bottom:10px">
       <div style="font-size:17px;font-weight:700;color:var(--tb);margin-bottom:3px">${CU.nm}</div>
-      <div style="font-size:9px;color:var(--td);font-family:'Share Tech Mono',monospace">@${CU.un}</div>
-      <div style="margin-top:5px;font-size:10px;color:var(--td)">📍 ${CU.region} &nbsp;|&nbsp; Katılım: ${new Date(CU.joined).toLocaleDateString('tr-TR')}</div>
-      <div style="font-size:10px;color:var(--td);margin-top:2px">Notlarım: ${nc}</div>
+      <div style="font-size:9px;color:var(--td);font-family:'Share Tech Mono',monospace">@${CU.un||CU.email}</div>
+      <div class="profile-role-row">
+        ${roleBadge(CU.role)}
+        <span style="font-size:10px;color:var(--td)">${ft}</span>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--td)">
+        📍 ${CU.region} &nbsp;|&nbsp; Katılım: ${new Date(CU.joined||Date.now()).toLocaleDateString('tr-TR')}
+        <br>Notlarım: ${nc}
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--b)">
+        <div style="font-size:9px;color:var(--td);letter-spacing:1px;margin-bottom:4px">AYRICALIKLAR</div>
+        ${myPerks.map(p=>`<div class="profile-perk">${p}</div>`).join('')}
+      </div>
+      ${roleLevel(CU.role)<3?`<div style="font-size:9px;color:var(--td);margin-top:6px;padding:6px;background:rgba(0,200,255,.05);border-radius:3px;border:1px solid var(--b)">
+        Sonraki rütbe: ${Object.values(ROLES).find(x=>x.level===roleLevel(CU.role)+1)?.label||'—'}
+      </div>`:''}
     </div>
-    <div class="mact"><button class="cncl" onclick="hidM()">KAPAT</button><button class="btn r" onclick="logout()" style="flex:1">🚪 ÇIKIŞ</button></div>`);
+    <div class="mact">
+      <button class="cncl" onclick="hidM()">KAPAT</button>
+      <button class="btn r" onclick="logout()" style="flex:1">🚪 ÇIKIŞ</button>
+    </div>`);
 }
 
 function reqLog(pg,btn){if(!CU){openAuth();return;}goPg(pg,btn);}
@@ -1496,16 +2011,29 @@ function renderAdmin(){
   // ── Kullanıcı listesi — kendi hesabı hariç herkesi göster ──────────────
   const otherUsers = users.filter(u => u.un !== CU.un);
   document.getElementById('admu').innerHTML = otherUsers.length
-    ? otherUsers.map(u=>`<div class="urow">
-        <div class="urn"><b>${u.nm||'—'}</b> <span style="color:var(--td);font-size:9px">@${u.un} · ${u.region||'—'}</span></div>
-        <span class="urol ${u.banned?'rbn':u.role==='admin'?'ra':'ru'}">${u.banned?'YASAK':u.role?u.role.toUpperCase():'USER'}</span>
-        <div style="display:flex;gap:4px">
-          <button class="btn sm ${u.banned?'g':'r'}" onclick="admBan('${u.un}')">${u.banned?'AÇ':'YASAK'}</button>
-          ${u.role!=='admin'?`<button class="btn o sm" onclick="admProm('${u.un}')">ADMİN</button>`:''}
-          <button class="btn sm" onclick="admDelU('${u.un}')">SİL</button>
-        </div>
-      </div>`).join('')
-    : '<div style="color:var(--td);font-size:11px;padding:8px">Henüz başka kayıtlı kullanıcı yok.</div>';
+    ? otherUsers.map(u=>{
+        const roleOpts = Object.keys(ROLES).map(r=>
+          `<option value="${r}" ${u.role===r?'selected':''}>${ROLES[r].emoji} ${ROLES[r].label}</option>`
+        ).join('');
+        const lastSeen = u.lastSeen ? tago(u.lastSeen) : '?';
+        const fishPref = u.fishType === 'boat' ? '⛵ Tekne' : '🏖 Kıyı';
+        return `<div class="urow" style="flex-wrap:wrap;gap:5px">
+          <div class="urn" style="width:100%">
+            <b>${u.nm||'—'}</b>
+            <span style="color:var(--td);font-size:9px"> @${u.un} · ${u.region||'—'} · ${fishPref}</span>
+            <span style="color:var(--td);font-size:9px;margin-left:6px">Son: ${lastSeen}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;width:100%">
+            <span class="urol ${u.banned?'rbn':u.role==='admin'?'ra':'ru'}">${u.banned?'YASAK':(u.role||'amator').toUpperCase()}</span>
+            <select class="role-sel" onchange="admSetRole('${u.un}',this.value)">${roleOpts}</select>
+            <div style="display:flex;gap:4px;margin-left:auto">
+              <button class="btn sm ${u.banned?'g':'r'}" onclick="admBan('${u.un}')">${u.banned?'AÇ':'YASAK'}</button>
+              <button class="btn sm" onclick="admDelU('${u.un}')">SİL</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--td);font-size:11px;padding:8px">Henüz kayıtlı kullanıcı yok.</div>';
 
   // ── Not yönetimi ──────────────────────────────────────────────────────
   document.getElementById('admn').innerHTML=notes.slice(-20).reverse().map(n=>`<div class="nrow">
@@ -1535,6 +2063,22 @@ function admProm(un){const u=users.find(x=>x.un===un);if(u){u.role='admin';ls(K2
 function admDelU(un){if(!confirm('Sil?'))return;users=users.filter(x=>x.un!==un);ls(K2,users);renderAdmin();}
 function admDelN(id){notes=notes.filter(n=>n.id!==id);ls(K1,notes);renderNotes();renderLog();renderAdmin();}
 function admAnn(){const t=document.getElementById('adann').value.trim();if(!t)return;addCSys(`📢 ADMİN DUYURUSU: ${t}`);document.getElementById('adann').value='';alert('Duyuru gönderildi!');}
+
+
+/** Admin: kullanıcı rolünü güncelle */
+function admSetRole(un, newRole){
+  if(!ROLES[newRole]){alert('Geçersiz rol');return;}
+  const u = users.find(x=>x.un===un||x.uid===un);
+  if(!u) return;
+  u.role = newRole;
+  ls(K2, users);
+  renderAdmin();
+  // Firebase'e yaz
+  const key = u.uid || u.un;
+  if(fbReady&&db) db.ref('users/'+key+'/role').set(newRole)
+    .then(()=>setFbSt('ok','✅ Rol güncellendi'))
+    .catch(e=>setFbSt('err','❌ '+e.message));
+}
 
 // Admin: Chat mesajı sil — hem yerelde hem Firebase'de
 function admDelChat(msgId){
@@ -1568,6 +2112,10 @@ function goAdmin(btn){
 function goWx(btn){
   goPg('wx-pg',btn);
   loadWxPage();
+  // Windy widget'ını mevcut konuma senkronize et
+  const lat = activeSpot ? parseFloat(activeSpot.lat) : (myLat || mapO?.getCenter()?.lat || 40.395);
+  const lng = activeSpot ? parseFloat(activeSpot.lng) : (myLng || mapO?.getCenter()?.lng || 26.68);
+  setTimeout(() => updateWindyWidget(lat, lng), 300);
 }
 
 async function loadWxPage(){
@@ -1763,6 +2311,409 @@ function wxIcon(code){
   return'🌡️';
 }
 
+
+
+// ══════════════════════════════════════════════════════
+// WINDY WIDGET
+// ══════════════════════════════════════════════════════
+let currentWindyLayer = 'wind';
+
+/**
+ * Windy iframe src'ini koordinat ve katmana göre güncelle
+ */
+function updateWindyWidget(lat, lng, layer) {
+  layer = layer || currentWindyLayer || 'wind';
+  const iframe = document.getElementById('windy-iframe');
+  if (!iframe) return;
+
+  const zoom = 9;
+  const src = `https://embed.windy.com/embed2.html?lat=${lat.toFixed(3)}&lon=${lng.toFixed(3)}`
+    + `&detailLat=${lat.toFixed(3)}&detailLon=${lng.toFixed(3)}`
+    + `&width=650&height=400&zoom=${zoom}&level=surface`
+    + `&overlay=${layer}&product=ecmwf`
+    + `&menu=&message=true&marker=true&calendar=now&pressure=true`
+    + `&type=map&location=coordinates&detail=&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1`;
+
+  iframe.src = src;
+
+  // Koordinat etiketini güncelle
+  const latEl = document.getElementById('wc-lat');
+  const lngEl = document.getElementById('wc-lng');
+  if (latEl) latEl.textContent = lat.toFixed(3);
+  if (lngEl) lngEl.textContent = lng.toFixed(3);
+}
+
+/**
+ * Windy katman (rüzgar/dalga/sıcaklık) değiştir
+ */
+function setWindyLayer(layer, btn) {
+  currentWindyLayer = layer;
+  document.querySelectorAll('.wlbtn').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+
+  // Mevcut koordinatlarla güncelle
+  const lat = activeSpot ? parseFloat(activeSpot.lat) : (myLat || mapO?.getCenter()?.lat || 40.395);
+  const lng = activeSpot ? parseFloat(activeSpot.lng) : (myLng || mapO?.getCenter()?.lng || 26.68);
+  updateWindyWidget(lat, lng, layer);
+}
+
+// ══════════════════════════════════════════════════════
+// OTOMATİK KONUM (Sayfa Açılışı)
+// ══════════════════════════════════════════════════════
+
+/**
+ * Sayfa açılışında sessizce konum alır.
+ * İzin verilirse haritayı o noktaya götürür ve
+ * yakın meraları önce sıralar. Reddedilirse sessizce geçer.
+ */
+function _autoLocateOnLoad(){
+  if(!('geolocation' in navigator)) return;
+
+  // Önceden verilmiş izni kontrol et
+  if(navigator.permissions){
+    navigator.permissions.query({name:'geolocation'}).then(perm => {
+      if(perm.state === 'granted'){
+        _getLocationAndApply(false); // sessiz mod
+      } else if(perm.state === 'prompt'){
+        // İzin kutusunu göster — kullanıcıya sormaktan çekinme
+        _getLocationAndApply(true);
+      }
+      // 'denied' → hiçbir şey yapma
+    }).catch(()=>{
+      // permissions API yok (bazı tarayıcılar) — deneyerek öğren
+      _getLocationAndApply(false);
+    });
+  } else {
+    _getLocationAndApply(false);
+  }
+}
+
+/**
+ * Konumu al ve uygula.
+ * @param {boolean} showErrors - hata mesajlarını göster
+ */
+function _getLocationAndApply(showErrors){
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      myLat = pos.coords.latitude;
+      myLng = pos.coords.longitude;
+
+      // Haritayı kullanıcı konumuna odakla
+      if(mapO){
+        mapO.flyTo([myLat, myLng], 11, {duration: 1.5});
+      }
+
+      // Konum marker koy
+      if(locMk){ try{ mapO.removeLayer(locMk); }catch(e){} }
+      try{
+        const ic = L.divIcon({
+          className:'',
+          html:'<div class="lpm"></div>',
+          iconSize:[22,22], iconAnchor:[11,11]
+        });
+        locMk = L.marker([myLat, myLng], {icon:ic, zIndexOffset:2000}).addTo(mapO);
+        locMk.bindPopup(
+          '<div style="text-align:center;min-width:130px">' +
+          '<div style="color:var(--a2);font-weight:700;font-family:Orbitron,monospace;font-size:10px;margin-bottom:4px">KONUMUNUZ</div>' +
+          '<div style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--td)">' +
+          myLat.toFixed(4) + ', ' + myLng.toFixed(4) + '</div></div>'
+        );
+      }catch(e){}
+
+      // Hava durumunu konuma güncelle
+      if(typeof fetchWForCoord === 'function') fetchWForCoord(myLat, myLng);
+
+      // Yakın meraları konuma göre sırala
+      if(popularSpots.length){
+        _sortSpotsByLocation(myLat, myLng);
+      } else {
+        // Meralar henüz yüklenmediyse, yüklendikten sonra sırala
+        const _origLoad = loadPopularSpots;
+        loadPopularSpots = function(){
+          _origLoad.call(this);
+          setTimeout(()=>{
+            if(myLat && popularSpots.length) _sortSpotsByLocation(myLat, myLng);
+          }, 500);
+        };
+      }
+
+      // locst panelini güncelle
+      const stEl = document.getElementById('locst');
+      if(stEl){
+        stEl.innerHTML =
+          '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">' +
+          '<span style="width:8px;height:8px;border-radius:50%;background:var(--a2);box-shadow:0 0 6px var(--a2);display:inline-block;flex-shrink:0"></span>' +
+          '<span style="font-family:Share Tech Mono,monospace;font-size:9px;color:var(--a2)">' +
+          myLat.toFixed(4) + ', ' + myLng.toFixed(4) + '</span></div>' +
+          '<div style="font-size:9px;color:var(--td)">Konumunuz alindi</div>';
+      }
+
+      // locbtn'yi güncelle
+      const btn = document.getElementById('locbtn');
+      if(btn){ btn.textContent = 'KONUMUM AKTIF'; btn.style.background='rgba(0,255,157,.12)'; }
+    },
+    err => {
+      // Konum alinamazsa Gelibolu varsayilan konuma git
+      if(mapO) mapO.flyTo([40.407, 26.674], 9, {duration:1.0});
+      if(showErrors){
+        const stEl = document.getElementById('locst');
+        if(stEl){
+          const msgs = {1:'Izin reddedildi.',2:'Konum alinamadi.',3:'Zaman asimi.'};
+          stEl.innerHTML = '<div style="color:var(--r);font-size:10px">' + (msgs[err.code]||'Konum hatasi.') + '</div>' +
+            '<button class="btn g" style="margin-top:6px;font-size:8px" onclick="locateMe()">Tekrar Dene</button>';
+        }
+      }
+    },
+    {enableHighAccuracy: true, timeout: 10000, maximumAge: 120000}
+  );
+}
+
+/**
+ * Popüler meraları kullanıcı konumuna göre sırala.
+ * En yakın meralar listenin başına gelir.
+ */
+function _sortSpotsByLocation(lat, lng){
+  if(!popularSpots.length) return;
+
+  // Mesafeleri hesapla ve sırala
+  const sorted = popularSpots.map(sp => ({
+    ...sp,
+    _dist: haversine(lat, lng, parseFloat(sp.lat||sp.la), parseFloat(sp.lng||sp.ln))
+  })).sort((a,b) => a._dist - b._dist);
+
+  popularSpots = sorted;
+  renderPopularSpots(sorted);
+
+  // Yakın noktalar panelini de güncelle
+  findNearby(lat, lng);
+}
+
+// ══════════════════════════════════════════════════════
+// TEKNE / KIYI MOD
+// ══════════════════════════════════════════════════════
+function setFishMode(mode) {
+  fishMode = mode;
+  document.getElementById('fmode-shore').classList.toggle('on', mode==='shore');
+  document.getElementById('fmode-boat').classList.toggle('on',  mode==='boat');
+  recalc();
+}
+
+// ══════════════════════════════════════════════════════
+// POPÜLER MERALAR — Firebase'den yükle + render
+// ══════════════════════════════════════════════════════
+function loadPopularSpots() {
+  if (!fbReady || !db) {
+    // Firebase bağlı değilse statik fallback göster
+    renderPopularSpots(ALLSPOTS.slice(0,8).map(s=>({
+      id: s.n.replace(/\s/g,'_'),
+      name:s.n, region:'Çanakkale', lat:s.la, lng:s.ln,
+      ground:s.type, fish:s.fish, desc:s.desc, efficiency:6
+    })));
+    return;
+  }
+
+  db.ref('PopularSpots/').on('value', snap => {
+    const list = [];
+    if (snap.exists()) {
+      snap.forEach(child => {
+        list.push({ id: child.key, ...child.val() });
+      });
+    }
+    // Firebase boşsa statik verileri kullan
+    if (!list.length) {
+      list.push(...ALLSPOTS.slice(0,8).map(s=>({
+        id: s.n.replace(/\s/g,'_'),
+        name:s.n, region:'Çanakkale', lat:s.la, lng:s.ln,
+        ground:s.type, fish:s.fish, desc:s.desc, efficiency:6
+      })));
+    }
+    popularSpots = list;
+    renderPopularSpots(list);
+    // Admin paneli açıksa mera listesini de yenile
+    if (document.getElementById('admin-pg')?.classList.contains('on')) renderAdmSpots();
+  });
+}
+
+function renderPopularSpots(list) {
+  const el = document.getElementById('popular-spots');
+  if (!el) return;
+  if (!list.length) { el.innerHTML='<div style="color:var(--td);font-size:10px;padding:8px">Henüz mera eklenmemiş.</div>'; return; }
+
+  el.innerHTML = list.map((sp, idx) => {
+    const eff    = parseInt(sp.efficiency) || 5;
+    const effCls = eff >= 8 ? 'hi' : eff >= 5 ? 'md' : 'lo';
+    const fishArr= Array.isArray(sp.fish) ? sp.fish : (sp.fish||'').split(',').map(f=>f.trim()).filter(Boolean);
+    const badges = fishArr.slice(0,4).map(f=>`<span class="pm-fb">${f}</span>`).join('');
+    const isActive = activeSpot && activeSpot.id === sp.id;
+    return `<div class="pm-card${isActive?' active':''}" onclick="selectSpotByIdx(${idx})">
+      <span class="pm-eff ${effCls}">${eff}/10</span>
+      <div class="pm-name">${sp.name}</div>
+      <div class="pm-region">📍 ${sp.region} · ${sp.ground||'—'}</div>
+      <div class="pm-fish">${badges}</div>
+    </div>`;
+  }).join('');
+}
+
+/**
+ * Mera seçildiğinde: haritayı uç, hava durumunu güncelle, tahminleri yenile
+ */
+function selectSpotByIdx(idx) {
+  const sp = popularSpots[idx];
+  if (sp) selectSpot(sp);
+}
+
+function selectSpot(sp) {
+  activeSpot = sp;
+
+  // Banner güncelle
+  const banner = document.getElementById('active-spot-banner');
+  if (banner) {
+    banner.style.display = 'block';
+    document.getElementById('asb-name').textContent   = sp.name;
+    document.getElementById('asb-region').textContent = `📍 ${sp.region} · ${sp.ground||'—'}`;
+  }
+
+  // Haritaya uç
+  const lat = parseFloat(sp.lat), lng = parseFloat(sp.lng);
+  if (!isNaN(lat) && !isNaN(lng)) {
+    mapO.flyTo([lat, lng], 12, {duration:1.2});
+    setTimeout(() => shAnalysis({lat, lng}), 1400);
+  }
+
+  // Zemin tipini güncelle
+  const gtEl = document.getElementById('gtype');
+  if (gtEl && sp.ground) gtEl.value = sp.ground;
+
+  // Hava durumunu yeni koordinata göre çek
+  if (!isNaN(lat)) fetchWForCoord(lat, lng);
+
+  // Windy widget'ını yeni koordinata güncelle
+  if (!isNaN(lat)) updateWindyWidget(lat, lng);
+
+  // Tahminleri yenile (bölge çarpanı aktif spot'tan gelecek)
+  recalc();
+
+  // Mera kartlarını yenile (active class)
+  renderPopularSpots(popularSpots);
+}
+
+// ══════════════════════════════════════════════════════
+// ADMIN: Mera Ekle / Sil
+// ══════════════════════════════════════════════════════
+function admAddSpot() {
+  if (!fbReady || !db) { alert('Firebase bağlantısı yok.'); return; }
+  if (!authUser) { alert('Bu işlem için Firebase Auth ile giriş yapmalısınız.'); return; }
+
+  const name    = document.getElementById('sp-name').value.trim();
+  const lat     = parseFloat(document.getElementById('sp-lat').value);
+  const lng     = parseFloat(document.getElementById('sp-lng').value);
+  const region  = document.getElementById('sp-region').value;
+  const eff     = parseInt(document.getElementById('sp-eff').value) || 5;
+  const ground  = document.getElementById('sp-ground').value;
+  const fishRaw = document.getElementById('sp-fish').value;
+  const desc    = document.getElementById('sp-desc').value.trim();
+
+  if (!name || isNaN(lat) || isNaN(lng)) { alert('Mera adı ve koordinatlar zorunludur.'); return; }
+
+  const fishArr = fishRaw.split(',').map(f=>f.trim()).filter(Boolean);
+  const key     = name.replace(/\s+/g,'_').toLowerCase() + '_' + Date.now();
+  const spotData = { name, lat, lng, region, efficiency: eff, ground, fish: fishArr, desc, addedBy: authUser.email, addedAt: Date.now() };
+
+  db.ref('PopularSpots/' + key).set(spotData)
+    .then(() => {
+      setFbSt('ok', '✅ Mera eklendi!');
+      // Formu temizle
+      ['sp-name','sp-lat','sp-lng','sp-fish','sp-desc'].forEach(id => document.getElementById(id).value='');
+    })
+    .catch(e => setFbSt('err', '❌ ' + e.message));
+}
+
+function admDelSpot(key) {
+  if (!confirm('Bu mera silinsin mi?')) return;
+  if (!fbReady || !db) return;
+  db.ref('PopularSpots/' + key).remove()
+    .then(() => setFbSt('ok','✅ Mera silindi'))
+    .catch(e => setFbSt('err','❌ '+e.message));
+}
+
+function renderAdmSpots() {
+  const el = document.getElementById('adm-spots-list');
+  if (!el) return;
+  if (!popularSpots.length) { el.innerHTML='<div style="color:var(--td);font-size:10px">Henuz mera eklenmemis.</div>'; return; }
+  el.innerHTML = popularSpots.map(sp=>`
+    <div class="nrow">
+      <div class="ntxt"><b style="color:var(--a2)">${sp.name}</b> <span style="color:var(--td);font-size:9px">${sp.region}</span></div>
+      <button class="btn r sm" onclick="admDelSpot('${sp.id}')">SİL</button>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// FİREBASE AUTH — Admin Giriş
+// ══════════════════════════════════════════════════════
+function initFirebaseAuth() {
+  if (!window.firebase || !firebase.auth) return;
+  const auth = firebase.auth();
+
+  auth.onAuthStateChanged(user => {
+    authUser = user;
+    // Admin panel kutucuklarını güncelle
+    const admAuthBox = document.getElementById('adm-auth-box');
+    const admContent = document.getElementById('adm-main-content');
+
+    if (user) {
+      if (admAuthBox) admAuthBox.style.display = 'none';
+      if (admContent) admContent.style.display = 'block';
+      const admEmail = document.getElementById('adm-auth-email');
+      if(admEmail) admEmail.textContent = user.email;
+
+      // Eğer CU yoksa otomatik profil yükle (sayfa yenilemesi sonrası)
+      if (!CU) fetchUserProfile(user.uid, user.email);
+    } else {
+      if (admAuthBox) admAuthBox.style.display = 'block';
+      if (admContent) admContent.style.display = 'none';
+      if (CU) { CU = null; applyRoleUI(); }
+    }
+  });
+}
+
+function admFirebaseLogin() {
+  if (!window.firebase || !firebase.auth) { alert('Firebase Auth SDK yüklenmedi'); return; }
+  const email = document.getElementById('adm-fb-email').value.trim();
+  const pass  = document.getElementById('adm-fb-pass').value;
+  if (!email || !pass) { alert('E-posta ve şifre girin.'); return; }
+
+  firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(cred => {
+      authUser = cred.user;
+      setFbSt('ok', '🔑 Admin girişi tamam');
+    })
+    .catch(e => {
+      setFbSt('err', '❌ ' + e.message);
+      alert('Giriş hatası: ' + e.message);
+    });
+}
+
+function admFirebaseLogout() {
+  if (!window.firebase || !firebase.auth) return;
+  firebase.auth().signOut().then(() => {
+    authUser = null;
+    setFbSt('ok', '👋 Çıkış yapıldı');
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// BÖLGE & MEVSİM ÇARPANLARINI FİREBASE'DEN ÇEK
+// ══════════════════════════════════════════════════════
+function loadMultipliers() {
+  if (!fbReady || !db) return;
+
+  db.ref('multipliers/region').once('value').then(snap => {
+    if (snap.exists()) { regionMult = snap.val(); recalc(); }
+  });
+  db.ref('multipliers/season').once('value').then(snap => {
+    if (snap.exists()) { seasonMult = snap.val(); recalc(); }
+  });
+}
 // ══════════════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════════════
@@ -1801,6 +2752,12 @@ function init(){
   }
 
   updateMobMenu();
+
+  // Sayfa yüklenince konum izni iste ve haritayı kullanıcıya odakla
+  _autoLocateOnLoad();
+
+  // Firebase yoksa statik meralarla başlat
+  setTimeout(() => { if(!popularSpots.length) loadPopularSpots(); }, 2000);
   let wt;
   mapO.on('moveend',()=>{clearTimeout(wt);wt=setTimeout(fetchW,2500);});
   setInterval(fetchW,600000);
@@ -1875,6 +2832,12 @@ function fbInit(){
     if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
     db=firebase.database();fbReady=true;
     setFbSt('ok','🔥 Firebase Bağlı');
+
+    // Popüler meralar + çarpanları yükle
+    loadPopularSpots();
+    loadMultipliers();
+    // Firebase Auth başlat
+    initFirebaseAuth();
 
     db.ref('notes/').on('child_added',snap=>{
       const n=snap.val();if(!n)return;
@@ -1956,27 +2919,13 @@ window.sendChat=function(){
   fbPush('chat/'+msg.id,msg);
 };
 
-const _origDoReg=window.doReg;
-window.doReg=function(){
-  const nm=document.getElementById('rnm').value.trim();
-  const u=document.getElementById('ruu').value.trim();
-  const p=document.getElementById('rup').value;
-  const rg=document.getElementById('rrg').value.trim();
-  const err=document.getElementById('rerr');
-  if(!nm||!u||!p){err.textContent='Tüm alanları doldurun.';err.classList.add('on');return;}
-  if(p.length<6){err.textContent='Şifre en az 6 karakter.';err.classList.add('on');return;}
-  if(users.find(x=>x.un===u)){err.textContent='Bu kullanıcı adı alınmış.';err.classList.add('on');return;}
-  err.classList.remove('on');
-  const nu={un:u,pw:p,nm,role:'user',region:rg||'Belirtilmedi',banned:false,joined:Date.now()};
-  users.push(nu);ls(K2,users);loginUser(nu);
-  const safe={un:u,nm,role:'user',region:rg||'Belirtilmedi',banned:false,joined:nu.joined};
-  fbPush('users/'+u,safe);
-};
+// doReg artık dogrudan Firebase Auth kullaniyor — override kaldirildi
 
 window.admBan=function(un){
-  const usr=users.find(x=>x.un===un);if(!usr)return;
+  const usr=users.find(x=>x.un===un||x.uid===un);if(!usr)return;
   usr.banned=!usr.banned;ls(K2,users);renderAdmin();
-  fbPush('users/'+un,{un:usr.un,nm:usr.nm,role:usr.role,region:usr.region,banned:usr.banned,joined:usr.joined});
+  const key=usr.uid||usr.un;
+  if(fbReady&&db)db.ref('users/'+key+'/banned').set(usr.banned).catch(()=>{});
 };
 window.admProm=function(un){
   const usr=users.find(x=>x.un===un);if(!usr)return;
@@ -1991,18 +2940,18 @@ window.admDelN=function(id){
   notes=notes.filter(n=>n.id!==id);ls(K1,notes);renderNotes();renderLog();renderAdmin();fbRemove('notes/'+id);
 };
 window.loginUser=function(u){
-  CU=u;ls(K3,u.un);
-  document.getElementById('captname').textContent=u.nm;
-  if(u.role==='admin')document.getElementById('admBtn').style.display='inline-block';
+  CU=u;ls(K3,u.uid||u.un);
+  if(u.fishType) setFishMode(u.fishType);
+  applyRoleUI();
+  const roleEl=document.getElementById('role-badge-hdr');
+  if(roleEl){const r=ROLES[u.role]||ROLES.amator;roleEl.textContent=r.emoji+' '+r.label;roleEl.style.color=r.color;roleEl.style.borderColor=r.color+'60';roleEl.style.display='inline-block';}
   addCSys(`${u.nm} Kamışını aldı geldi ⚓`);
   updateMobMenu();
   goPg('map-pg',document.querySelector('.ntab'));
 };
 </script>
 
-<!-- ══ FİREBASE SDK compat ══ -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- Firebase SDK head'e taşındı -->
 <script>
 // ── Firebase Yapılandırması ──
 // Firebase konsolunuzdan gerçek değerleri girin:
