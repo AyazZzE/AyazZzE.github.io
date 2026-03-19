@@ -485,11 +485,8 @@ textarea.ri{resize:none;height:58px;font-family:'Rajdhani',sans-serif;font-size:
 body.logged-out #admBtn { display: none; }
 
 /* Usta+ için kilit kalkıyor */
-body.role-amator .usta-only { opacity: 0.35; pointer-events: none; position: relative; }
-body.role-usta   .usta-only,
-body.role-reis   .usta-only,
-body.role-admin  .usta-only,
-body.role-superadmin .usta-only { opacity: 1; pointer-events: auto; }
+/* Rütbe kısıtlamaları askıya alındı — tüm kullanıcılar tam erişimli */
+.usta-only { opacity: 1 !important; pointer-events: auto !important; }
 
 /* Kilit overlay */
 .role-lock {
@@ -503,10 +500,8 @@ body.role-superadmin .usta-only { opacity: 1; pointer-events: auto; }
   color: var(--td);
   margin-top: 4px;
 }
-body.role-usta .role-lock,
-body.role-reis .role-lock,
-body.role-admin .role-lock,
-body.role-superadmin .role-lock { display: none; }
+/* Kilit mesajları tüm kullanıcılara gizli */
+.role-lock { display: none !important; }
 
 /* Amator görünümü — detaylı balık kartı kısıtı */
 body.role-amator .fd { display: none !important; }  /* Balık detay açılmıyor */
@@ -518,7 +513,7 @@ body.role-admin  .fd { /* normal — JS toggle ile açılabilir */ }
 /* admBtn JS yönetiminde */
 
 /* Windy gelişmiş katmanlar: default gizli, JS açar */
-#windy-adv-layers { display: none; }
+#windy-adv-layers { display: flex; gap: 4px; }  /* Herkese açık */
 body.role-superadmin #windy-adv-layers { display: flex !important; }
 body.role-superadmin #windy-lock { display: none !important; }
 body.role-superadmin #sprecs-lock { display: none !important; }
@@ -1250,21 +1245,15 @@ function applyRoleUI(){
 
   // Windy gelişmiş katmanlar — inline style KALDIR, CSS class yönetsin
   // (CSS: body.role-admin .usta-only { opacity:1; pointer-events:auto } zaten var)
+  // Rütbe kısıtlamaları askıya alındı — tüm kullanıcılar tam erişimli
   const windyAdv = document.getElementById('windy-adv-layers');
-  if(windyAdv){
-    windyAdv.style.display = hasRole('usta') ? 'flex' : 'none';
-    const wLock = document.getElementById('windy-lock');
-    if(wLock) wLock.style.display = hasRole('usta') ? 'none' : 'block';
-  }
-
-  // Nokta tavsiyesi — inline style kaldır, CSS class yönetsin
+  if(windyAdv) windyAdv.style.display = 'flex';
+  const wLock = document.getElementById('windy-lock');
+  if(wLock) wLock.style.display = 'none';
   const sprecEl = document.getElementById('sprecs');
-  if(sprecEl){
-    sprecEl.style.opacity   = '';   // inline'ı sil, CSS class kazansın
-    sprecEl.style.pointerEvents = '';
-  }
+  if(sprecEl){ sprecEl.style.opacity='1'; sprecEl.style.pointerEvents='auto'; }
   const spLock = document.getElementById('sprecs-lock');
-  if(spLock) spLock.style.display = hasRole('usta') ? 'none' : 'block';
+  if(spLock) spLock.style.display = 'none';
 
   // Chat girişi
   const chInp = document.getElementById('chia');
@@ -2196,7 +2185,7 @@ function shUMenu(){
     </div>`);
 }
 
-function reqLog(pg,btn){if(!CU){openAuth();return;}goPg(pg,btn);}
+function reqLog(pg,btn){goPg(pg,btn);}  // Görüntüleme herkese açık
 
 // ══════════════════════════════════════════════════════
 // NOTE MODAL
@@ -2927,8 +2916,18 @@ function renderAdmSpots() {
 // FİREBASE AUTH — Admin Giriş
 // ══════════════════════════════════════════════════════
 function initFirebaseAuth() {
-  if (!window.firebase || !firebase.auth) return;
+  if(typeof firebase === 'undefined' || !firebase.auth){
+    console.warn('[BR] Firebase Auth SDK yüklenmedi');
+    return;
+  }
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg || cfg.apiKey === 'YOUR_API_KEY' || !cfg.apiKey) return;
+
   const auth = firebase.auth();
+
+  // Oturum kalıcılığı — tarayıcı kapansa bile giriş devam eder
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .catch(e => console.warn('[BR] Persistence ayarlanamadı:', e.message));
 
   auth.onAuthStateChanged(user => {
     authUser = user;
@@ -3126,11 +3125,9 @@ function renderXP(){
     if(mnext){ mnext.textContent = nextLv ? 'Sonraki: ' + nextLv.name + ' (' + nextLv.min + ' XP)' : '🏆 Maksimum seviye!'; }
   }
 
-  // — Rol sınıfı güncellemesi (usta-only için) —
-  // Balıkçı+ ise usta kilitlerini kaldır
-  if(isSA || rawXp >= 2000){
-    document.body.classList.add('role-superadmin'); // CSS kilitleri kaldırır
-  }
+  // Rütbe kısıtlamaları askıya alındı — body class güncelle
+  // (Tüm kısıtlamalar CSS'de zaten kaldırıldı)
+  if(isSA){ document.body.classList.add('role-superadmin'); }
 }
 
 /** Toast bildirimi göster */
@@ -3364,8 +3361,7 @@ function _setActive(bnId,mnId){
 function mobGo(pgId,mnId,bnId){goPg(pgId,null);_setActive(bnId,mnId);closeMobMenu();}
 function mobGoWx(){goWx(null);_setActive('bn-wx','mn-wx');closeMobMenu();}
 function mobGoReq(pgId,mnId,bnId){
-  if(!CU){openAuth();closeMobMenu();return;}
-  goPg(pgId,null);_setActive(bnId,mnId);closeMobMenu();
+  goPg(pgId,null);_setActive(bnId,mnId);closeMobMenu();  // Giriş gerekmez
 }
 function mobGoAdmin(){
   if(!CU||CU.role!=='admin'){alert('⚠ Yetki gerekli!');closeMobMenu();return;}
@@ -3400,9 +3396,23 @@ function setFbSt(cls,txt){
   if(cls!=='err')setTimeout(()=>{el.className='';el.textContent='⬡ FB';},3000);
 }
 function fbInit(){
-  if(!window.firebase){console.warn('Firebase SDK yüklenmedi');return;}
+  // Adım 1: SDK yüklü mü?
+  if(typeof firebase === 'undefined' || !firebase.app){
+    console.error('[BR] Firebase SDK yüklenemedi. İnternet bağlantısını kontrol edin.');
+    setFbSt('err','❌ SDK yüklenemedi');
+    return;
+  }
+  // Adım 2: Config placeholder mı?
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg || cfg.apiKey === 'YOUR_API_KEY' || !cfg.apiKey){
+    console.error('[BR] Firebase API Key ayarlanmamis. FIREBASE_CONFIG icerisindeki YOUR_API_KEY degerini Firebase Console dan aldiginiz gercek key ile degistirin.');
+    setFbSt('err','❌ API Key eksik');
+    // Yerel mod ile çalışmaya devam et
+    fbReady = false;
+    return;
+  }
   try{
-    if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
     db=firebase.database();fbReady=true;
     setFbSt('ok','🔥 Firebase Bağlı');
 
@@ -3433,7 +3443,9 @@ function fbInit(){
       if(document.getElementById('admin-pg')?.classList.contains('on'))renderAdmin();
     });
 
-    // ── Kullanıcı listesi: on('value') ile TÜM listeyi anlık çek ────────
+    // ── Kullanıcı listesi: on('value') — Realtime DB anlık senkronizasyon
+    // Firestore'daki onSnapshot'ın Realtime DB eşdeğeridir.
+    // Yeni kayıt, ban, rol değişikliği → admin panelinde sayfa yenilenmeden ANINDA görünür.
     db.ref('users/').on('value', snap => {
       const fbUsers = [];
       if (snap.exists()) {
@@ -3603,14 +3615,23 @@ window.loginUser=function(u){
 <script>
 // ── Firebase Yapılandırması ──
 // Firebase konsolunuzdan gerçek değerleri girin:
+// ╔══════════════════════════════════════════════════════╗
+// ║  FİREBASE YAPILANDIRMASI — BURAYA GERÇEk DEĞERLER   ║
+// ╠══════════════════════════════════════════════════════╣
+// ║  1. https://console.firebase.google.com adresine git ║
+// ║  2. Projenizi seçin                                  ║
+// ║  3. Project Settings (⚙️) → Your apps → Web app     ║
+// ║  4. SDK setup → Config seçin → kopyalayın           ║
+// ╚══════════════════════════════════════════════════════╝
 window.FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",
+  apiKey:            "AIzaSyC-aX1YCaiNSaM3dQVI6kUU_NrhpQf6WMs",
   authDomain:        "balikci-radari.firebaseapp.com",
   databaseURL:       "https://balikci-radari-default-rtdb.europe-west1.firebasedatabase.app",
   projectId:         "balikci-radari",
-  storageBucket:     "balikci-radari.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  storageBucket:     "balikci-radari.firebasestorage.app",
+  messagingSenderId: "928393488983",
+  appId:             "1:928393488983:web:9be891daa126174b015112",
+  measurementId:     "G-T8RHPQK11P"
 };
 document.addEventListener('DOMContentLoaded', fbInit);
 </script>
